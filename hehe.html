@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare - Hospital Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1920x1080/007BFF/FFFFFF?text=Hospital+Building');
+            background-size: cover;
+            background-position: center;
+        }
+        .team-member-img {
+            width: 128px;
+            height: 128px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-blue-600">
+                <i class="fas fa-hospital-user mr-2"></i>MediCare
+            </a>
+            <div class="hidden md:flex space-x-6 items-center">
+                <a href="#home" class="text-gray-600 hover:text-blue-600 transition duration-300">Home</a>
+                <a href="#about" class="text-gray-600 hover:text-blue-600 transition duration-300">About Us</a>
+                <a href="#services" class="text-gray-600 hover:text-blue-600 transition duration-300">Services</a>
+                <a href="#doctors" class="text-gray-600 hover:text-blue-600 transition duration-300">Doctors</a>
+                <a href="#contact" class="text-gray-600 hover:text-blue-600 transition duration-300">Contact</a>
+                <a href="#appointment" class="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition duration-300">Book Appointment</a>
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-gray-600 hover:text-blue-600 focus:outline-none">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+            </div>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden hidden px-6 pb-4">
+            <a href="#home" class="block py-2 text-gray-600 hover:text-blue-600">Home</a>
+            <a href="#about" class="block py-2 text-gray-600 hover:text-blue-600">About Us</a>
+            <a href="#services" class="block py-2 text-gray-600 hover:text-blue-600">Services</a>
+            <a href="#doctors" class="block py-2 text-gray-600 hover:text-blue-600">Doctors</a>
+            <a href="#contact" class="block py-2 text-gray-600 hover:text-blue-600">Contact</a>
+            <a href="#appointment" class="block mt-2 bg-blue-600 text-white text-center py-2 px-4 rounded-full hover:bg-blue-700">Book Appointment</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- Hero Section -->
+        <section id="home" class="hero-section text-white h-[60vh] md:h-[80vh] flex items-center">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-4 animate-fade-in-down">Compassionate Care, Advanced Medicine</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-3xl mx-auto animate-fade-in-up">Providing the best medical services for you and your family. Your health is our priority.</p>
+                <a href="#services" class="bg-white text-blue-600 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition duration-300 text-lg">Our Services</a>
+            </div>
+        </section>
+
+        <!-- About Us Section -->
+        <section id="about" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">About MediCare Hospital</h2>
+                    <p class="text-gray-600 mt-2">Your Trusted Partner in Health</p>
+                </div>
+                <div class="flex flex-col md:flex-row items-center gap-12">
+                    <div class="md:w-1/2">
+                        <img src="https://placehold.co/600x400/E2E8F0/4A5568?text=Hospital+Interior" alt="Hospital Interior" class="rounded-lg shadow-xl w-full">
+                    </div>
+                    <div class="md:w-1/2">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Our Mission</h3>
+                        <p class="text-gray-600 mb-4">To provide exceptional healthcare services in a compassionate and healing environment. We are committed to clinical excellence and patient-centered care, utilizing the latest medical technology and research to improve health outcomes.</p>
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Our Vision</h3>
+                        <p class="text-gray-600">To be a leading healthcare institution recognized for our innovation, quality, and commitment to the community. We strive to create a healthier future for everyone we serve.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="py-16 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Our Medical Services</h2>
+                    <p class="text-gray-600 mt-2">Comprehensive care for every need.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Service Card 1 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-heartbeat"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Cardiology</h3>
+                        <p class="text-gray-600">Expert care for heart conditions, from diagnosis to treatment and rehabilitation.</p>
+                    </div>
+                    <!-- Service Card 2 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-brain"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Neurology</h3>
+                        <p class="text-gray-600">Advanced treatment for disorders of the nervous system, including the brain and spinal cord.</p>
+                    </div>
+                    <!-- Service Card 3 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-bone"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Orthopedics</h3>
+                        <p class="text-gray-600">Specialized care for bones, joints, ligaments, tendons, and muscles.</p>
+                    </div>
+                     <!-- Service Card 4 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-lungs"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Pulmonology</h3>
+                        <p class="text-gray-600">Care for diseases related to the respiratory tract, like asthma and pneumonia.</p>
+                    </div>
+                     <!-- Service Card 5 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-stethoscope"></i></div>
+                        <h3 class="text-xl font-bold mb-2">General Checkup</h3>
+                        <p class="text-gray-600">Comprehensive health checkups to monitor and maintain your overall well-being.</p>
+                    </div>
+                     <!-- Service Card 6 -->
+                    <div class="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-2xl transition-shadow duration-300">
+                        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-first-aid"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Emergency Care</h3>
+                        <p class="text-gray-600">24/7 emergency services for immediate medical attention when you need it most.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Doctors Section -->
+        <section id="doctors" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Meet Our Doctors</h2>
+                    <p class="text-gray-600 mt-2">Dedicated professionals at your service.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <!-- Doctor 1 -->
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                        <img src="https://placehold.co/128x128/007BFF/FFFFFF?text=Dr.+Smith" alt="Dr. Emily Smith" class="team-member-img mx-auto mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Dr. Emily Smith</h3>
+                        <p class="text-blue-600 font-semibold">Cardiologist</p>
+                        <p class="text-gray-600 mt-2 text-sm">Dr. Smith has over 15 years of experience in cardiac care and is a fellow of the American College of Cardiology.</p>
+                    </div>
+                     <!-- Doctor 2 -->
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                         <img src="https://placehold.co/128x128/28A745/FFFFFF?text=Dr.+Jones" alt="Dr. John Jones" class="team-member-img mx-auto mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Dr. John Jones</h3>
+                        <p class="text-blue-600 font-semibold">Neurologist</p>
+                        <p class="text-gray-600 mt-2 text-sm">A leading expert in neurological disorders, Dr. Jones is known for his patient-first approach and research.</p>
+                    </div>
+                     <!-- Doctor 3 -->
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                         <img src="https://placehold.co/128x128/FFC107/FFFFFF?text=Dr.+Will" alt="Dr. Sarah Williams" class="team-member-img mx-auto mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Dr. Sarah Williams</h3>
+                        <p class="text-blue-600 font-semibold">Orthopedic Surgeon</p>
+                        <p class="text-gray-600 mt-2 text-sm">Specializing in sports medicine and joint replacement, Dr. Williams helps patients regain mobility and live pain-free.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Appointment Section -->
+        <section id="appointment" class="py-16 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Book an Appointment</h2>
+                    <p class="text-gray-600 mt-2">Easy and convenient online booking.</p>
+                </div>
+                <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl">
+                    <form id="appointmentForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-gray-700 font-medium mb-1">Full Name</label>
+                                <input type="text" id="name" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div>
+                                <label for="email" class="block text-gray-700 font-medium mb-1">Email</label>
+                                <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                             <div>
+                                <label for="phone" class="block text-gray-700 font-medium mb-1">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                             <div>
+                                <label for="department" class="block text-gray-700 font-medium mb-1">Department</label>
+                                <select id="department" name="department" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select a Department</option>
+                                    <option value="cardiology">Cardiology</option>
+                                    <option value="neurology">Neurology</option>
+                                    <option value="orthopedics">Orthopedics</option>
+                                    <option value="pulmonology">Pulmonology</option>
+                                    <option value="general">General Checkup</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label for="date" class="block text-gray-700 font-medium mb-1">Preferred Date</label>
+                                <input type="date" id="date" name="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                             <div>
+                                <label for="time" class="block text-gray-700 font-medium mb-1">Preferred Time</label>
+                                <input type="time" id="time" name="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <label for="message" class="block text-gray-700 font-medium mb-1">Additional Message (Optional)</label>
+                            <textarea id="message" name="message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div class="text-center mt-6">
+                            <button type="submit" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition duration-300 w-full md:w-auto">Submit Request</button>
+                        </div>
+                    </form>
+                    <div id="form-feedback" class="mt-4 text-center"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                 <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Get In Touch</h2>
+                    <p class="text-gray-600 mt-2">We are here to help you.</p>
+                </div>
+                <div class="flex flex-col md:flex-row gap-10">
+                    <div class="md:w-1/2">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Contact Details</h3>
+                        <div class="space-y-4 text-gray-600">
+                            <p><i class="fas fa-map-marker-alt mr-3 text-blue-600"></i>123 Health St, Wellness City, 12345</p>
+                            <p><i class="fas fa-phone-alt mr-3 text-blue-600"></i>(123) 456-7890</p>
+                            <p><i class="fas fa-envelope mr-3 text-blue-600"></i>contact@medicare.com</p>
+                            <p><i class="fas fa-clock mr-3 text-blue-600"></i>Open 24/7 for Emergency</p>
+                        </div>
+                         <div class="mt-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">Follow Us</h3>
+                            <div class="flex space-x-4">
+                                <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-facebook-f fa-lg"></i></a>
+                                <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-twitter fa-lg"></i></a>
+                                <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-instagram fa-lg"></i></a>
+                                <a href="#" class="text-gray-500 hover:text-blue-600"><i class="fab fa-linkedin-in fa-lg"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="md:w-1/2">
+                        <div class="w-full h-64 md:h-full bg-gray-200 rounded-lg overflow-hidden">
+                            <!-- In a real scenario, you would embed a Google Map here -->
+                            <img src="https://placehold.co/600x400/CCCCCC/4A5568?text=Map+Placeholder" alt="Map to Hospital" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p>&copy; 2025 MediCare Hospital. All Rights Reserved.</p>
+                <div class="flex mt-4 md:mt-0 space-x-6">
+                    <a href="#" class="hover:text-blue-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-blue-400">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                mobileMenu.classList.add('hidden'); // Close mobile menu on click
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+
+                if (targetElement) {
+                     targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Appointment form submission
+        const appointmentForm = document.getElementById('appointmentForm');
+        const formFeedback = document.getElementById('form-feedback');
+
+        appointmentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Basic validation
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const department = document.getElementById('department').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+
+            if (!name || !email || !phone || !department || !date || !time) {
+                formFeedback.textContent = 'Please fill out all required fields.';
+                formFeedback.className = 'text-red-500 mt-4 text-center';
+                return;
+            }
+            
+            // Show success message
+            formFeedback.textContent = 'Thank you! Your appointment request has been submitted. We will contact you shortly.';
+            formFeedback.className = 'text-green-600 font-semibold mt-4 text-center';
+            
+            // Clear the form
+            appointmentForm.reset();
+            
+            // Remove message after a few seconds
+            setTimeout(() => {
+                formFeedback.textContent = '';
+            }, 5000);
+        });
+
+    </script>
+
+</body>
+</html>
