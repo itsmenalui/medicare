@@ -1,17 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { usePatientAuth as useAuth } from "../context/PatientAuthContext.jsx";
+import { usePatientAuth } from "../context/PatientAuthContext.jsx";
 import {
   Calendar,
-  FileText,
   Pill,
+  MessageSquare,
+  ArrowRight,
+  BedDouble,
   User,
   Mail,
   Phone,
   Droplets,
-  MessageSquare,
-  ArrowRight,
-  BedDouble, // 1. Import the BedDouble icon
 } from "lucide-react";
 
 const PortalCard = ({ to, title, description, icon, color }) => (
@@ -44,11 +43,11 @@ const PatientProfileCard = ({ patient }) => (
       </div>
       <div className="flex items-center">
         <Mail className="w-5 h-5 text-gray-500 mr-3" />
-        <span className="text-gray-700">{patient.email}</span>
+        <span className="text-gray-700">{patient?.email}</span>
       </div>
       <div className="flex items-center">
         <Phone className="w-5 h-5 text-gray-500 mr-3" />
-        <span className="text-gray-700">{patient.contact_number}</span>
+        <span className="text-gray-700">{patient?.contact_number}</span>
       </div>
       <div className="flex items-center">
         <Droplets className="w-5 h-5 text-gray-500 mr-3" />
@@ -59,7 +58,7 @@ const PatientProfileCard = ({ patient }) => (
 );
 
 const PatientPortalPage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading } = usePatientAuth();
 
   if (loading) {
     return (
@@ -68,7 +67,13 @@ const PatientPortalPage = () => {
       </div>
     );
   }
-  if (!user || !user.patient) {
+
+  // ✅ FIX: This defensive logic handles different user object structures.
+  // It checks for the nested 'patient' object first, then falls back to the top-level 'user' object.
+  const patientData = user?.patient ? user.patient : user;
+
+  // Now, check if the resolved patient data is valid.
+  if (!patientData || !patientData.patient_id) {
     return (
       <div className="text-center py-20 text-red-600 font-semibold text-lg">
         Could not load patient data. Please try logging in again.
@@ -80,8 +85,9 @@ const PatientPortalPage = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-6 py-12">
         <div className="mb-10">
+          {/* ✅ FIX: Use the safe 'patientData' variable */}
           <h1 className="text-5xl font-extrabold text-gray-900">
-            Welcome back, {user?.patient?.first_name || "Patient"}!
+            Welcome back, {patientData.first_name || "Patient"}!
           </h1>
           <p className="text-xl text-gray-600 mt-2">
             This is your personal health dashboard. Manage your healthcare with
@@ -90,7 +96,8 @@ const PatientPortalPage = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <PatientProfileCard patient={user.patient} />
+            {/* ✅ FIX: Pass the safe 'patientData' variable */}
+            <PatientProfileCard patient={patientData} />
           </div>
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
             <PortalCard
@@ -100,20 +107,12 @@ const PatientPortalPage = () => {
               icon={<Calendar size={28} className="text-blue-800" />}
               color="bg-blue-100"
             />
-            {/* 2. NEW CARD ADDED HERE */}
             <PortalCard
               to="/portal/my-bookings"
               title="My Room Bookings"
               description="View your room booking history."
               icon={<BedDouble size={28} className="text-teal-800" />}
               color="bg-teal-100"
-            />
-            <PortalCard
-              to="/portal/records"
-              title="Medical Records"
-              description="Access diagnoses and treatment history."
-              icon={<FileText size={28} className="text-green-800" />}
-              color="bg-green-100"
             />
             <PortalCard
               to="/portal/prescriptions"

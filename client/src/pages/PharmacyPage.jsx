@@ -13,7 +13,7 @@ const MedicationCard = ({ med }) => {
     if (isOutOfStock) return;
     addToCart(med);
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000); // Reset after 2 seconds
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -86,10 +86,8 @@ const PharmacyPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // ADDED: State for search term
   const [searchTerm, setSearchTerm] = useState("");
 
-  // This function now handles fetching, including search and pagination
   const fetchMeds = async (
     currentPage,
     currentSearchTerm,
@@ -98,7 +96,8 @@ const PharmacyPage = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get("/api/medications", {
+      // **FIXED URL HERE**
+      const response = await axios.get("/api/pharmacy/medications", {
         params: {
           page: currentPage,
           limit: 20,
@@ -106,8 +105,6 @@ const PharmacyPage = () => {
         },
       });
       const { medications: newMeds, totalCount } = response.data;
-
-      // If it's a new search or initial load, replace the meds. Otherwise, append them.
       setMedications((prevMeds) =>
         shouldRefresh ? newMeds : [...prevMeds, ...newMeds]
       );
@@ -119,21 +116,19 @@ const PharmacyPage = () => {
     }
   };
 
-  // This effect triggers a new search when the user stops typing
   useEffect(() => {
     const timerId = setTimeout(() => {
-      setMedications([]); // Clear previous results
-      setPage(1); // Reset to page 1 for new search
+      setMedications([]);
+      setPage(1);
       fetchMeds(1, searchTerm, true);
-    }, 500); // Debounce time of 500ms
-
+    }, 500);
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchMeds(nextPage, searchTerm, false); // Fetch next page without refreshing
+    fetchMeds(nextPage, searchTerm, false);
   };
 
   return (
@@ -146,8 +141,6 @@ const PharmacyPage = () => {
           <p className="text-xl text-gray-600 mt-2">
             Browse and purchase from our wide range of medications.
           </p>
-
-          {/* ADDED: Search Bar */}
           <div className="mt-8 max-w-2xl mx-auto">
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -163,9 +156,7 @@ const PharmacyPage = () => {
             </div>
           </div>
         </div>
-
         {error && <p className="text-center py-10 text-red-500">{error}</p>}
-
         {medications.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {medications.map((med) => (
@@ -176,7 +167,6 @@ const PharmacyPage = () => {
             ))}
           </div>
         )}
-
         {!loading && medications.length === 0 && !error && (
           <div className="text-center py-16 border-2 border-dashed rounded-xl">
             <Pill size={48} className="mx-auto text-gray-400 mb-4" />
@@ -188,9 +178,7 @@ const PharmacyPage = () => {
             </p>
           </div>
         )}
-
         {loading && <p className="text-center py-10">Loading Medications...</p>}
-
         {!loading && hasMore && (
           <div className="text-center mt-12">
             <button onClick={loadMore} className="btn btn-primary btn-lg">

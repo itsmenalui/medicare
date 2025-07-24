@@ -1,41 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";
 import axios from "axios";
-import { Calendar, Clock, User, FileText, Eye } from "lucide-react";
+import { Calendar, Clock, User, FileText, Eye, Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+// ✅ FIX: Import the new modal component
+import PrescriptionModal from "../components/PrescriptionModal";
 
-const AppointmentCard = ({ appointment, onPrescriptionCreated }) => {
-  const isPast = new Date(appointment.appointment_date) < new Date();
-  const cardClass = isPast
-    ? "bg-gray-100 border-gray-200"
-    : "bg-white border-blue-100";
+const AppointmentCard = ({ appointment, onSelectAppointment }) => {
   const navigate = useNavigate();
-  const [prescription, setPrescription] = useState(null);
-  const [loadingPrescription, setLoadingPrescription] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-
-  const handlePrescriptionCreated = () => {
-    setPrescription(null); // force refetch
-    if (onPrescriptionCreated) onPrescriptionCreated();
-  };
-
-  useEffect(() => {
-    const fetchPrescription = async () => {
-      setLoadingPrescription(true);
-      try {
-        const res = await axios.get(`/api/appointments/${appointment.appointment_id}/prescription`);
-        setPrescription(res.data);
-      } catch (err) {
-        setPrescription(null);
-      } finally {
-        setLoadingPrescription(false);
-      }
-    };
-    fetchPrescription();
-  }, [appointment.appointment_id]);
 
   return (
-    <div className={`p-6 rounded-2xl shadow-md border ${cardClass}`}>
+    <div
+      className={`p-6 rounded-2xl shadow-md border ${
+        new Date(appointment.appointment_date) < new Date()
+          ? "bg-gray-100 border-gray-200"
+          : "bg-white border-blue-100"
+      }`}
+    >
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-xl font-bold text-gray-900">
@@ -45,8 +26,13 @@ const AppointmentCard = ({ appointment, onPrescriptionCreated }) => {
             {appointment.patient_email}
           </p>
         </div>
-        <div className="flex items-center text-xs font-semibold px-3 py-1 rounded-full"
-          style={{ background: appointment.status === 'Done' ? '#d1fae5' : '#dbeafe', color: appointment.status === 'Done' ? '#065f46' : '#1e40af' }}>
+        <div
+          className="flex items-center text-xs font-semibold px-3 py-1 rounded-full"
+          style={{
+            background: appointment.status === "Done" ? "#d1fae5" : "#dbeafe",
+            color: appointment.status === "Done" ? "#065f46" : "#1e40af",
+          }}
+        >
           <Clock size={14} className="mr-1.5" />
           {appointment.status}
         </div>
@@ -83,50 +69,23 @@ const AppointmentCard = ({ appointment, onPrescriptionCreated }) => {
             <p className="text-gray-800">{appointment.reason}</p>
           </div>
         </div>
-        {/* Prescription Buttons */}
-        {loadingPrescription ? (
-          <span className="text-gray-400">Checking prescription...</span>
-        ) : prescription ? (
-          <>
-            <button
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold flex items-center gap-2"
-              onClick={() => setShowModal(true)}
-            >
-              <Eye size={18} /> View Prescription
-            </button>
-            {showModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                <div className="bg-white p-8 rounded-lg max-w-lg w-full relative">
-                  <button className="absolute top-2 right-2 text-gray-500" onClick={() => setShowModal(false)}>&times;</button>
-                  <h2 className="text-2xl font-bold mb-4">Prescription Details</h2>
-                  <div className="mb-2"><b>Date:</b> {prescription.prescription_date ? new Date(prescription.prescription_date).toLocaleString() : ""}</div>
-                  <div className="mb-2"><b>Instructions:</b> {prescription.instructions}</div>
-                  <div className="mb-2"><b>Medicines:</b>
-                    <ul className="list-disc ml-6">
-                      {prescription.medicines.map((med, idx) => (
-                        <li key={idx}>
-                          {(med.medication_name || med.custom_name || med.medication_id)} ({med.type}) - {med.dosage}, {med.times_per_day}x/day, {med.days} days, Qty: {med.quantity}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mb-2"><b>Checkups:</b>
-                    <ul className="list-disc ml-6">
-                      {prescription.checkups.map((c, idx) => (
-                        <li key={idx}>{c.description}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
+        {appointment.status !== "Done" ? (
           <button
             className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold"
-            onClick={() => navigate(`/employee-portal/appointments/${appointment.appointment_id}/prescribe`)}
+            onClick={() =>
+              navigate(
+                `/employee-portal/appointments/${appointment.appointment_id}/prescribe`
+              )
+            }
           >
             Write Prescription
+          </button>
+        ) : (
+          <button
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold flex items-center gap-2"
+            onClick={() => onSelectAppointment(appointment)}
+          >
+            <Eye size={18} /> View Prescription
           </button>
         )}
       </div>
@@ -140,42 +99,77 @@ const EmployeeSchedulePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const refreshAppointments = async () => {
-    if (!employeeUser || !employeeUser.employee) return;
-    setLoading(true);
+  // ✅ FIX: Add state for the new modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    prescription: null,
+    patient: null,
+    doctor: null,
+  });
+  const [modalLoading, setModalLoading] = useState(false);
+
+  useEffect(() => {
+    const refreshAppointments = async () => {
+      if (!employeeUser || !employeeUser.employee?.doctor_id) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `/api/doctors/${employeeUser.employee.doctor_id}/appointments`
+        );
+        setAppointments(response.data);
+        setError(null);
+      } catch (err) {
+        setError("Could not fetch your schedule. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      refreshAppointments();
+    }
+  }, [employeeUser, authLoading]);
+
+  // ✅ FIX: New function to handle viewing the prescription
+  const handleViewPrescription = async (appointment) => {
+    setModalLoading(true);
+    setShowModal(true);
     try {
-      const response = await axios.get(
-        `/api/doctor/${employeeUser.employee.doctor_id}/appointments`
-      );
-      setAppointments(response.data);
-      setError(null);
-    } catch (err) {
-      setError("Could not fetch your schedule. Please try again later.");
+      const [presRes, patRes] = await Promise.all([
+        axios.get(
+          `/api/appointments/${appointment.appointment_id}/prescription`
+        ),
+        axios.get(`/api/patient/${appointment.patient_id}`),
+      ]);
+
+      setModalData({
+        prescription: presRes.data,
+        patient: patRes.data,
+        doctor: employeeUser.employee, // We already have doctor data
+      });
+    } catch {
+      alert("Could not load full prescription details.");
+      setShowModal(false);
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (authLoading) return;
-    refreshAppointments();
-  }, [employeeUser, authLoading]);
-
-  if (loading) {
+  if (loading)
     return (
       <div className="text-center py-20 font-semibold text-lg">
         Loading Your Schedule...
       </div>
     );
-  }
-
-  if (error) {
+  if (error)
     return (
       <div className="text-center py-20 text-red-600 font-semibold text-lg">
         {error}
       </div>
     );
-  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -199,7 +193,11 @@ const EmployeeSchedulePage = () => {
         {appointments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {appointments.map((app) => (
-              <AppointmentCard key={app.appointment_id} appointment={app} onPrescriptionCreated={refreshAppointments} />
+              <AppointmentCard
+                key={app.appointment_id}
+                appointment={app}
+                onSelectAppointment={handleViewPrescription}
+              />
             ))}
           </div>
         ) : (
@@ -213,9 +211,24 @@ const EmployeeSchedulePage = () => {
             </p>
           </div>
         )}
+
+        {/* ✅ FIX: Render the new modal */}
+        {showModal &&
+          (modalLoading ? (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+              <Loader className="text-white animate-spin" size={48} />
+            </div>
+          ) : (
+            <PrescriptionModal
+              prescription={modalData.prescription}
+              patient={modalData.patient}
+              doctor={modalData.doctor}
+              onClose={() => setShowModal(false)}
+            />
+          ))}
       </div>
     </div>
   );
 };
 
-export default EmployeeSchedulePage; 
+export default EmployeeSchedulePage;

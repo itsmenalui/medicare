@@ -20,7 +20,6 @@ const EmployeeSignupPage = () => {
     password: "",
     contact_number: "",
     license_number: "",
-    // UPDATED: Changed from department_id to department_name
     department_name: "",
     doctor_type_id: "",
   });
@@ -51,7 +50,7 @@ const EmployeeSignupPage = () => {
       password: formData.password,
       contact_number: formData.contact_number,
       license_number: formData.license_number,
-      department_name: formData.department_name, // UPDATED
+      department_name: formData.department_name,
     };
 
     if (role === "Doctor") {
@@ -60,10 +59,7 @@ const EmployeeSignupPage = () => {
 
     try {
       await axios.post("/api/employee/signup", payload);
-      setSuccess("Account created successfully! Redirecting to login...");
-      setTimeout(() => {
-        navigate("/employee-login");
-      }, 2000);
+      setSuccess("Account submitted! Please wait for admin approval.");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create account.");
     } finally {
@@ -75,14 +71,14 @@ const EmployeeSignupPage = () => {
     <>
       <style>
         {`
-                    @keyframes fadeIn {
-                        from { opacity: 0; transform: translateY(-10px); }
-                        to { opacity: 1; transform: translateY(0); }
-                    }
-                    .animate-fadeIn {
-                        animation: fadeIn 0.5s ease-out forwards;
-                    }
-                `}
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+          }
+        `}
       </style>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl flex overflow-hidden">
@@ -221,7 +217,6 @@ const EmployeeSignupPage = () => {
                       required
                     />
                   </div>
-                  {/* UPDATED: Changed to department_name */}
                   <div className="relative">
                     <Building
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"

@@ -28,12 +28,14 @@ import DiseaseDetailPage from "./pages/DiseaseDetailPage.jsx";
 import AIHelpPage from "./pages/AIHelpPage.jsx";
 import AboutUsPage from "./pages/AboutUsPage.jsx";
 import EmployeeSchedulePage from "./pages/EmployeeSchedulePage.jsx";
-import PrescriptionFormPage from "./pages/PrescriptionFormPage.jsx";
-
-// Placeholder Page Components
-import CheckupPage from "./pages/CheckupPage.jsx";
+import AdminLoginPage from "./pages/AdminLoginPage.jsx";
+import AdminPortalPage from "./pages/AdminPortalPage.jsx";
 import AmbulancePage from "./pages/AmbulancePage.jsx";
-import AppointmentPage from "./pages/AppointmentPage.jsx";
+
+// --- NEWLY MERGED PRESCRIPTION PAGES ---
+import PrescriptionFormPage from "./pages/PrescriptionFormPage.jsx";
+import MyPrescriptionsPage from "./pages/MyPrescriptionsPage.jsx";
+import MyPreviousPrescriptionsPage from "./pages/MyPreviousPrescriptionsPage.jsx";
 
 function App() {
   return (
@@ -53,22 +55,25 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/employee-login" element={<EmployeeLoginPage />} />
             <Route path="/employee-signup" element={<EmployeeSignupPage />} />
-
-            {/* --- NEW DISEASE ROUTES --- */}
             <Route path="/diseases" element={<DiseasesPage />} />
             <Route path="/diseases/:id" element={<DiseaseDetailPage />} />
-
-            {/* --- ABOUT US ROUTE --- */}
             <Route path="/about" element={<AboutUsPage />} />
-
-            {/* --- SERVICE ROUTES --- */}
-            <Route path="/checkup" element={<CheckupPage />} />
             <Route path="/ambulance" element={<AmbulancePage />} />
-            <Route path="/appointment" element={<AppointmentPage />} />
             <Route path="/rooms" element={<RoomsPage />} />
             <Route path="/ai-help" element={<AIHelpPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
 
-            {/* --- PROTECTED ROUTES --- */}
+            {/* --- ADMIN PROTECTED ROUTE --- */}
+            <Route
+              path="/admin/portal"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminPortalPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* --- PATIENT PROTECTED ROUTES --- */}
             <Route
               path="/portal"
               element={
@@ -94,6 +99,16 @@ function App() {
               }
             />
             <Route
+              path="/portal/prescriptions"
+              element={
+                <ProtectedRoute role="patient">
+                  <MyPrescriptionsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* --- EMPLOYEE PROTECTED ROUTES --- */}
+            <Route
               path="/employee-portal"
               element={
                 <ProtectedRoute role="employee">
@@ -101,32 +116,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/portal/chat"
-              element={
-                <ProtectedRoute role="patient">
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employee-portal/chat"
-              element={
-                <ProtectedRoute role="employee">
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat"
-              element={
-                <ProtectedRoute role={["patient", "employee"]}>
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* --- EMPLOYEE ROUTES --- */}
             <Route
               path="/employee-portal/schedule"
               element={
@@ -140,6 +129,32 @@ function App() {
               element={
                 <ProtectedRoute role="employee">
                   <PrescriptionFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employee-portal/prescriptions"
+              element={
+                <ProtectedRoute role="employee">
+                  <MyPreviousPrescriptionsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* --- SHARED PROTECTED ROUTES --- */}
+            <Route
+              path="/portal/chat"
+              element={
+                <ProtectedRoute role="patient">
+                  <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employee-portal/chat"
+              element={
+                <ProtectedRoute role="employee">
+                  <ChatPage />
                 </ProtectedRoute>
               }
             />

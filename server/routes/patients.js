@@ -3,15 +3,24 @@ const router = express.Router();
 const pool = require("../db");
 
 // GET patient details by ID
-// Path: /api/patient/:id
 router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+  // ✅ FIX: Convert ID to a number
+  const patientId = parseInt(req.params.id, 10);
+  if (isNaN(patientId)) {
+    return res.status(400).json({ error: "Invalid patient ID." });
+  }
+
   try {
     const { rows } = await pool.query(
       'SELECT * FROM "PATIENT" WHERE patient_id = $1',
-      [id]
+      [patientId]
     );
-    res.json(rows.length ? rows[0] : res.status(404).send("Patient not found"));
+
+    // ✅ FIX: Correct "not found" logic
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error fetching patient details:", err.message);
     res.status(500).send("Server error");
@@ -19,9 +28,11 @@ router.get("/:id", async (req, res) => {
 });
 
 // GET a patient's appointments
-// Path: /api/patient/:id/appointments
 router.get("/:id/appointments", async (req, res) => {
-  const { id } = req.params;
+  const patientId = parseInt(req.params.id, 10);
+  if (isNaN(patientId)) {
+    return res.status(400).json({ error: "Invalid patient ID." });
+  }
   try {
     const query = `
         SELECT a.appointment_id, a.appointment_date, a.status, a.reason, 
@@ -33,7 +44,7 @@ router.get("/:id/appointments", async (req, res) => {
         JOIN "DOCTOR_TYPE" dt ON d.doctor_type_id = dt.doctor_type_id 
         WHERE a.patient_id = $1 ORDER BY a.appointment_date DESC;
     `;
-    const { rows } = await pool.query(query, [id]);
+    const { rows } = await pool.query(query, [patientId]);
     res.json(rows);
   } catch (err) {
     console.error("Error fetching patient appointments:", err.message);
@@ -42,9 +53,11 @@ router.get("/:id/appointments", async (req, res) => {
 });
 
 // GET a patient's room bookings
-// Path: /api/patient/:id/bookings
 router.get("/:id/bookings", async (req, res) => {
-  const { id } = req.params;
+  const patientId = parseInt(req.params.id, 10);
+  if (isNaN(patientId)) {
+    return res.status(400).json({ error: "Invalid patient ID." });
+  }
   try {
     const query = `
       SELECT 
@@ -56,7 +69,7 @@ router.get("/:id/bookings", async (req, res) => {
       WHERE rb.patient_id = $1
       ORDER BY rb.check_in_date DESC;
     `;
-    const { rows } = await pool.query(query, [id]);
+    const { rows } = await pool.query(query, [patientId]);
     res.json(rows);
   } catch (err) {
     console.error("Error fetching patient room bookings:", err.message);

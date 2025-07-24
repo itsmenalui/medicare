@@ -1,53 +1,48 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { usePatientAuth } from "../context/PatientAuthContext";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 const ProtectedRoute = ({ children, role }) => {
-  const { isAuthenticated, loading: patientLoading } = usePatientAuth();
+  // Get the loading and authentication status from each context
+  const { isAuthenticated: isPatientAuthenticated, loading: patientLoading } =
+    usePatientAuth();
   const { isEmployeeAuthenticated, loading: employeeLoading } =
     useEmployeeAuth();
-  const location = useLocation();
+  const { isAdminAuthenticated, loading: adminLoading } = useAdminAuth();
 
-  const isLoading = patientLoading || employeeLoading;
+  const roles = Array.isArray(role) ? role : [role];
 
-  if (isLoading) {
-    // You can show a loading spinner here while checking auth state
-    return <div>Loading...</div>;
-  }
-
-  // Check patient role
-  if (role === "patient") {
-    if (!isAuthenticated) {
-      // Not a logged-in patient, redirect to patient login page
-      return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-  }
-
-  // Check employee role
-  if (role === "employee") {
-    if (!isEmployeeAuthenticated) {
-      // Not a logged-in employee, redirect to employee login page
-      return (
-        <Navigate to="/employee-login" state={{ from: location }} replace />
-      );
-    }
-  }
-
-  // If roles include both, check if either is authenticated
+  // ✅ FIX: Show a loading indicator while any of the relevant auth checks are in progress.
   if (
-    Array.isArray(role) &&
-    role.includes("patient") &&
-    role.includes("employee")
+    (roles.includes("patient") && patientLoading) ||
+    (roles.includes("employee") && employeeLoading) ||
+    (roles.includes("admin") && adminLoading)
   ) {
-    if (!isAuthenticated && !isEmployeeAuthenticated) {
-      // Not logged in as either, redirect to a generic login choice page or homepage
-      return <Navigate to="/" state={{ from: location }} replace />;
-    }
+    return (
+      <div className="text-center py-20 font-semibold">Authenticating...</div>
+    );
   }
 
-  // If all checks pass, render the component the user was trying to access
-  return children;
+  // Once loading is complete, perform the checks
+  if (roles.includes("admin")) {
+    if (isAdminAuthenticated) return children;
+    return <Navigate to="/admin/login" />;
+  }
+
+  if (roles.includes("patient")) {
+    if (isPatientAuthenticated) return children;
+    return <Navigate to="/login" />;
+  }
+
+  if (roles.includes("employee")) {
+    if (isEmployeeAuthenticated) return children;
+    return <Navigate to="/employee-login" />;
+  }
+
+  // Fallback if no role matches (should not happen in normal use)
+  return <Navigate to="/" />;
 };
 
 export default ProtectedRoute;

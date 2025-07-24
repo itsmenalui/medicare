@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Trash2, User, MapPin, ShoppingCart as CartIcon } from "lucide-react";
 import { usePatientAuth as useAuth } from "../context/PatientAuthContext";
+
 const CheckoutPage = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const { user } = useAuth();
@@ -14,7 +15,6 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     if (user?.patient?.address) {
-      // Use optional chaining here
       setDeliveryAddress(user.patient.address);
     }
   }, [user]);
@@ -39,14 +39,20 @@ const CheckoutPage = () => {
     setIsProcessing(true);
     setError("");
     try {
-      await axios.post("/api/checkout", { cartItems });
+      // ✅ FIX: Use the correct API endpoint for checkout
+      await axios.post("/api/pharmacy/checkout", { cartItems });
       alert("Payment Successful! Your order has been placed.");
       clearCart();
       navigate("/pharmacy");
     } catch (err) {
-      setError(
-        "Checkout failed. Some items may be out of stock or there was a server error. Please review your cart."
-      );
+      // ✅ FIX: Display the specific error message from the backend
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else {
+        setError(
+          "An unexpected server error occurred. Please try again later."
+        );
+      }
       console.error(err);
     } finally {
       setIsProcessing(false);
@@ -119,7 +125,6 @@ const CheckoutPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {/* UPDATED: Changed to dark background with white text */}
                       <input
                         type="number"
                         value={itemQuantity}
@@ -187,7 +192,6 @@ const CheckoutPage = () => {
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={20}
                 />
-                {/* UPDATED: Changed to dark background with white text */}
                 <input
                   type="text"
                   name="address"

@@ -56,6 +56,8 @@ export const PatientAuthProvider = ({ children }) => {
   };
 
   return (
-    <PatientAuthContext.Provider value={value}>{children}</PatientAuthContext.Provider>
+    <PatientAuthContext.Provider value={value}>
+      {children}
+    </PatientAuthContext.Provider>
   );
 };

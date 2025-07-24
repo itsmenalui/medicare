@@ -1,7 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext.jsx";
-import { Briefcase, Users, MessageSquare, ArrowRight } from "lucide-react";
+import {
+  Briefcase,
+  Users,
+  MessageSquare,
+  ArrowRight,
+  FilePlus,
+} from "lucide-react";
 
 const PortalCard = ({ to, title, description, icon, color }) => (
   <Link
@@ -60,14 +66,15 @@ const EmployeePortalPage = () => {
             icon={<Briefcase size={28} className="text-teal-800" />}
             color="bg-teal-100"
           />
+          {/* NEWLY ADDED PRESCRIPTION CARD */}
           <PortalCard
-            to="/employee-portal/patients" // Placeholder link
-            title="Patient Directory"
-            description="Access medical records and patient information."
-            icon={<Users size={28} className="text-cyan-800" />}
-            color="bg-cyan-100"
+            to="/employee-portal/prescriptions"
+            title="Previous Prescriptions"
+            description="View prescriptions you have written."
+            icon={<FilePlus size={28} className="text-purple-800" />}
+            color="bg-purple-100"
           />
-          <div className="md:col-span-3">
+          <div className="lg:col-start-1 lg:col-span-3">
             <PortalCard
               to="/employee-portal/chat"
               title="Chat with Patients"
