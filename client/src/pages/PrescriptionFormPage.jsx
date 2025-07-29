@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios"; // Use the custom api instance
 
 const emptyMedicine = {
   medication_id: "",
@@ -32,36 +32,24 @@ const PrescriptionFormPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(""); // Clear previous errors
+      setError("");
       try {
-        // Fetch appointment details
-        const res = await axios.get(`/api/appointments/${appointmentId}`);
+        const res = await api.get(`/appointments/${appointmentId}`);
         setAppointment(res.data);
         setReason(res.data.reason);
         setDate(res.data.appointment_date);
 
-        // Fetch doctor info
-        const docRes = await axios.get(`/api/doctors/${res.data.doctor_id}`);
+        const docRes = await api.get(`/doctors/${res.data.doctor_id}`);
         setDoctor(docRes.data);
 
-        // Fetch patient info
-        const patRes = await axios.get(`/api/patient/${res.data.patient_id}`);
+        const patRes = await api.get(`/patient/${res.data.patient_id}`);
         setPatient(patRes.data);
 
-        // ✅ FIX: Corrected the API endpoint URL for medications
-        const medsRes = await axios.get(`/api/pharmacy/medications?limit=1000`);
+        const medsRes = await api.get(`/pharmacy/medications?limit=1000`);
         setMedicationOptions(medsRes.data.medications || []);
       } catch (err) {
         console.error("API Call Failed:", err);
-        if (err.response) {
-          console.error("Error Status:", err.response.status);
-          console.error("Error Data:", err.response.data);
-          setError(
-            `Error: ${err.response.data.error || err.response.statusText}`
-          );
-        } else {
-          setError("An unexpected error occurred. Check the console.");
-        }
+        setError("An unexpected error occurred while fetching data.");
       } finally {
         setLoading(false);
       }
@@ -94,7 +82,7 @@ const PrescriptionFormPage = () => {
     setError("");
     setSuccess("");
     try {
-      await axios.post(`/api/appointments/${appointmentId}/prescription`, {
+      await api.post(`/appointments/${appointmentId}/prescription`, {
         instructions,
         medicines,
         checkups,
@@ -112,17 +100,17 @@ const PrescriptionFormPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <h1 className="text-4xl font-bold mb-6">Write Prescription</h1>
+      {/* CORRECTED: Added text-gray-900 to make the title visible */}
+      <h1 className="text-4xl font-bold mb-6 text-gray-900">Write Prescription</h1>
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-lg shadow-xl space-y-6"
       >
-        {/* Pre-filled info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-gray-700 font-semibold">Doctor</label>
             <input
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-100 text-gray-800"
               value={
                 doctor ? `Dr. ${doctor.first_name} ${doctor.last_name}` : ""
               }
@@ -132,7 +120,7 @@ const PrescriptionFormPage = () => {
           <div>
             <label className="block text-gray-700 font-semibold">Patient</label>
             <input
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-100 text-gray-800"
               value={
                 patient ? `${patient.first_name} ${patient.last_name}` : ""
               }
@@ -142,7 +130,7 @@ const PrescriptionFormPage = () => {
           <div>
             <label className="block text-gray-700 font-semibold">Date</label>
             <input
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-100 text-gray-800"
               value={date ? new Date(date).toLocaleString() : ""}
               disabled
             />
@@ -150,13 +138,12 @@ const PrescriptionFormPage = () => {
           <div>
             <label className="block text-gray-700 font-semibold">Reason</label>
             <input
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-100 text-gray-800"
               value={reason}
               disabled
             />
           </div>
         </div>
-        {/* Instructions */}
         <div>
           <label className="block text-gray-700 font-semibold">
             General Instructions
@@ -169,7 +156,6 @@ const PrescriptionFormPage = () => {
             placeholder="e.g. Take with food, rest, etc."
           />
         </div>
-        {/* Medicines */}
         <div>
           <label className="block text-gray-700 font-bold mb-2">
             Medicines
@@ -296,7 +282,6 @@ const PrescriptionFormPage = () => {
             Add Medicine
           </button>
         </div>
-        {/* Checkups */}
         <div>
           <label className="block text-gray-700 font-bold mb-2">Checkups</label>
           {checkups.map((check, idx) => (
@@ -324,7 +309,6 @@ const PrescriptionFormPage = () => {
             Add Checkup
           </button>
         </div>
-        {/* Submit */}
         <div>
           <button
             type="submit"

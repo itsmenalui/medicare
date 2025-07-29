@@ -78,6 +78,15 @@ router.get("/:id/availability", async (req, res) => {
         new Date(r.utc_appointment_date).toISOString()
       )
     );
+
+    const unavailableSlotsResult = await pool.query(
+      'SELECT (unavailable_time AT TIME ZONE \'utc\') as utc_unavailable_time FROM "DOCTOR_UNAVAILABILITY" WHERE doctor_id = $1',
+      [doctorId]
+    );
+    const unavailableISOs = new Set(
+      unavailableSlotsResult.rows.map((r) => new Date(r.utc_unavailable_time).toISOString())
+    );
+
     let allSlots = [];
     const now = new Date();
     for (let i = 0; i < 7; i++) {
@@ -93,7 +102,7 @@ router.get("/:id/availability", async (req, res) => {
               const slotISO = slotTime.toISOString();
               allSlots.push({
                 time: slotISO,
-                isBooked: bookedISOs.has(slotISO),
+                isBooked: bookedISOs.has(slotISO) || unavailableISOs.has(slotISO),
               });
             }
           }
@@ -110,19 +119,48 @@ router.get("/:id/availability", async (req, res) => {
   }
 });
 
+// DELETE a specific time slot from a doctor's availability
+router.delete("/:id/availability", async (req, res) => {
+  const doctorId = parseInt(req.params.id, 10);
+  const { time_slot } = req.body;
+
+  if (isNaN(doctorId) || !time_slot) {
+    return res.status(400).json({ error: "Invalid doctor ID or time slot." });
+  }
+
+  try {
+    const query = `
+      INSERT INTO "DOCTOR_UNAVAILABILITY" (doctor_id, unavailable_time) 
+      VALUES ($1, $2)
+    `;
+    await pool.query(query, [doctorId, time_slot]);
+    res.status(200).json({ message: "Time slot successfully marked as unavailable." });
+  } catch (err) {
+    if (err.code === '23505') {
+       return res.status(200).json({ message: "Slot was already unavailable." });
+    }
+    console.error(`Error marking slot unavailable for doctor ${doctorId}:`, err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+
 // GET a doctor's appointments
 router.get("/:id/appointments", async (req, res) => {
   const doctorId = parseInt(req.params.id, 10);
-  // ✅ FIX: Get status from query. Default to 'Scheduled' for the main schedule page.
   const status = req.query.status || "Scheduled";
 
   if (isNaN(doctorId)) {
     return res.status(400).json({ error: "Invalid doctor ID." });
   }
   try {
+    // FINAL FIX: Select the timestamp and explicitly cast it to UTC.
+    // The 'pg' driver will convert this to a full ISO 8601 string with timezone info.
     const query = `
       SELECT 
-        a.appointment_id, a.appointment_date, a.status, a.reason, a.patient_id,
+        a.appointment_id, 
+        a.appointment_date::timestamp AT TIME ZONE 'UTC' as appointment_date, 
+        a.status, a.reason, a.patient_id,
         p.first_name as patient_first_name, 
         p.last_name as patient_last_name,
         p.email as patient_email

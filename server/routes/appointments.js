@@ -47,41 +47,38 @@ router.post("/", async (req, res) => {
 
 // GET specific appointment details
 router.get("/:id", async (req, res) => {
-  // --- DIAGNOSTIC LOGGING ADDED ---
-  console.log(`--- Handling GET /api/appointments/:id ---`);
-  console.log(`Received id from URL params: '${req.params.id}'`);
-
   const appointmentId = parseInt(req.params.id, 10);
-  console.log(`Parsed integer ID: ${appointmentId}`);
 
   if (isNaN(appointmentId)) {
-    console.log(`ID is not a number. Sending 400 error.`);
     return res.status(400).json({ error: "Invalid appointment ID." });
   }
 
   try {
-    const queryText = 'SELECT * FROM "APPOINTMENT" WHERE appointment_id = $1';
-    console.log(`Executing query: ${queryText} with ID: ${appointmentId}`);
-
+    // FINAL FIX: Explicitly select the timestamp and cast it to UTC.
+    // The 'pg' driver will now convert this to a full ISO 8601 string with timezone info.
+    const queryText = `
+      SELECT 
+        appointment_id, 
+        patient_id, 
+        doctor_id, 
+        appointment_date::timestamp AT TIME ZONE 'UTC' as appointment_date, 
+        status, 
+        reason, 
+        notes 
+      FROM "APPOINTMENT" WHERE appointment_id = $1
+    `;
     const { rows } = await pool.query(queryText, [appointmentId]);
 
-    console.log(`Database query returned ${rows.length} row(s).`);
-
     if (rows.length === 0) {
-      console.log(`No appointment found. Sending 404 error.`);
       return res.status(404).json({ error: "Appointment not found" });
     }
 
-    console.log(`Appointment found. Sending data.`);
     res.json(rows[0]);
   } catch (err) {
-    console.error("--- ERROR in GET /api/appointments/:id ---");
-    console.error(err.stack); // Log the full error stack
+    console.error("Error in GET /api/appointments/:id:", err.stack);
     res.status(500).send("Server error");
   }
 });
-
-// --- MERGED PRESCRIPTION ROUTES ---
 
 // GET a prescription for an appointment
 router.get("/:id/prescription", async (req, res) => {
@@ -162,7 +159,6 @@ router.post("/:id/prescription", async (req, res) => {
     if (checkups && checkups.length > 0) {
       for (const checkup of checkups) {
         if (checkup.description) {
-          // Ensure description is not empty
           const checkupQuery =
             'INSERT INTO "PRESCRIPTION_CHECKUP" (prescription_id, description) VALUES ($1, $2)';
           await client.query(checkupQuery, [
