@@ -12,9 +12,14 @@ export const EmployeeAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("employeeUser");
-    if (storedUser) {
-      setEmployeeUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem("employeeUser");
+      if (storedUser) {
+        setEmployeeUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse employee user from localStorage", error);
+      localStorage.removeItem("employeeUser");
     }
     setLoading(false);
   }, []);

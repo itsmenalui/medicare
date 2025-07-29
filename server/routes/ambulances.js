@@ -3,9 +3,10 @@ const router = express.Router();
 const pool = require("../db");
 
 // GET all ambulances
-// Path: /api/ambulances
 router.get("/", async (req, res) => {
   try {
+    // ✅ FIX: Reverted to SELECT * to match your database schema and prevent crashes.
+    // This will correctly fetch all columns, including the new booking_fee.
     const query =
       'SELECT * FROM "AMBULANCE" ORDER BY status, estimated_arrival_mins;';
     const { rows } = await pool.query(query);
@@ -17,12 +18,12 @@ router.get("/", async (req, res) => {
 });
 
 // POST to book an ambulance
-// Path: /api/ambulances/book
 router.post("/book", async (req, res) => {
-  const { ambulance_id } = req.body;
-  const patient_id = 1; // Note: This is hardcoded in your original logic
-  if (!ambulance_id) {
-    return res.status(400).json({ error: "Ambulance ID is required." });
+  const { ambulance_id, patient_id } = req.body;
+  if (!ambulance_id || !patient_id) {
+    return res
+      .status(400)
+      .json({ error: "Ambulance ID and Patient ID are required." });
   }
 
   const client = await pool.connect();
@@ -42,12 +43,10 @@ router.post("/book", async (req, res) => {
     await client.query(insertRequestQuery, [ambulance_id, patient_id]);
 
     await client.query("COMMIT");
-    res
-      .status(200)
-      .json({
-        message: "Ambulance booked successfully",
-        ambulance: updatedAmbulance.rows[0],
-      });
+    res.status(200).json({
+      message: "Ambulance booked successfully",
+      ambulance: updatedAmbulance.rows[0],
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error booking ambulance:", err.message);

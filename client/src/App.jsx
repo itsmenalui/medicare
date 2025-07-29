@@ -31,13 +31,13 @@ import EmployeeSchedulePage from "./pages/EmployeeSchedulePage.jsx";
 import AdminLoginPage from "./pages/AdminLoginPage.jsx";
 import AdminPortalPage from "./pages/AdminPortalPage.jsx";
 import AmbulancePage from "./pages/AmbulancePage.jsx";
-
-// --- NEWLY MERGED PRESCRIPTION PAGES ---
 import PrescriptionFormPage from "./pages/PrescriptionFormPage.jsx";
 import MyPrescriptionsPage from "./pages/MyPrescriptionsPage.jsx";
 import MyPreviousPrescriptionsPage from "./pages/MyPreviousPrescriptionsPage.jsx";
 
 function App() {
+  // ✅ FIX: The provider wrappers have been removed from this file.
+  // They are correctly placed in your main.jsx file.
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-gray-50">

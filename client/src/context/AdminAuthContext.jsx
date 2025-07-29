@@ -12,9 +12,14 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("adminUser");
-    if (storedUser) {
-      setAdminUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem("adminUser");
+      if (storedUser) {
+        setAdminUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse admin user from localStorage", error);
+      localStorage.removeItem("adminUser");
     }
     setLoading(false);
   }, []);

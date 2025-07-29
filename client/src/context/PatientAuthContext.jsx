@@ -12,7 +12,6 @@ export const PatientAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for a logged-in user when the app starts
     try {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -27,7 +26,6 @@ export const PatientAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // This is the login for PATIENTS only
       const response = await axios.post("/api/login", {
         username: email,
         password,
@@ -37,7 +35,6 @@ export const PatientAuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify(userData));
     } catch (error) {
       console.error("Login failed:", error);
-      // Throw the error so the login page can display it
       throw new Error(error.response?.data?.error || "Login failed");
     }
   };

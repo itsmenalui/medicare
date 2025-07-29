@@ -2,7 +2,48 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
-// --- DOCTOR APPROVAL ROUTES ---
+// --- AMBULANCE MANAGEMENT (NEW) ---
+
+// GET all ambulance details for the admin dashboard
+router.get("/ambulances/details", async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        a.ambulance_id,
+        a.contact_number,
+        a.status,
+        a.booking_fee,
+        p.first_name AS patient_first_name,
+        p.last_name AS patient_last_name
+      FROM 
+        "AMBULANCE" a
+      LEFT JOIN 
+        "AMBULANCE_REQUEST" ar ON a.ambulance_id = ar.ambulance_id AND a.status = 'Booked'
+      LEFT JOIN 
+        "PATIENT" p ON ar.patient_id = p.patient_id
+      ORDER BY 
+        a.status, a.ambulance_id;
+    `;
+    const { rows } = await pool.query(query);
+
+    // Combine patient first and last names into a single property
+    const finalRows = rows.map((row) => {
+      const { patient_first_name, patient_last_name, ...rest } = row;
+      const booked_by_patient =
+        patient_first_name && patient_last_name
+          ? `${patient_first_name} ${patient_last_name}`
+          : null;
+      return { ...rest, booked_by_patient };
+    });
+
+    res.json(finalRows);
+  } catch (err) {
+    console.error("Error fetching ambulance details for admin:", err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+// --- DOCTOR APPROVAL ROUTES (Your existing code) ---
 
 // GET all pending doctor applications
 router.get("/pending-doctors", async (req, res) => {
@@ -94,7 +135,7 @@ router.post("/decline-doctor", async (req, res) => {
   }
 });
 
-// --- NURSE APPROVAL ROUTES (NEW) ---
+// --- NURSE APPROVAL ROUTES (Your existing code) ---
 
 // GET all pending nurse applications
 router.get("/pending-nurses", async (req, res) => {
