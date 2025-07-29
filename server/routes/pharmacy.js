@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 
 // GET all medications (handles search and pagination)
-// Path: /api/pharmacy/medications
+// This route is unchanged and correct.
 router.get("/medications", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
@@ -47,12 +47,15 @@ router.get("/medications", async (req, res) => {
 });
 
 // POST to checkout
-// Path: /api/pharmacy/checkout
+// ✅ FIX: This is the fully merged and corrected checkout route.
 router.post("/checkout", async (req, res) => {
-  const { cartItems } = req.body;
+  // Now accepts both cartItems and patient_id
+  const { cartItems, patient_id } = req.body;
 
-  if (!cartItems || cartItems.length === 0) {
-    return res.status(400).json({ error: "Cart is empty." });
+  if (!cartItems || cartItems.length === 0 || !patient_id) {
+    return res
+      .status(400)
+      .json({ error: "Cart is empty or patient ID is missing." });
   }
 
   const client = await pool.connect();
@@ -60,35 +63,57 @@ router.post("/checkout", async (req, res) => {
     // Start a database transaction
     await client.query("BEGIN");
 
-    // Process each item in the cart
-    for (const item of cartItems) {
-      // ✅ FIX: Update the stock and check if the update was successful
+    // Separate cart items into medications and tests
+    const medications = cartItems.filter(
+      (item) => !item.medication_id.toString().startsWith("test_")
+    );
+    const tests = cartItems.filter((item) =>
+      item.medication_id.toString().startsWith("test_")
+    );
+
+    // Process medications with robust stock checking
+    for (const item of medications) {
       const updateResult = await client.query(
         'UPDATE "MEDICATION" SET stock_quantity = stock_quantity - $1 WHERE medication_id = $2 AND stock_quantity >= $1',
         [item.quantity, item.medication_id]
       );
 
-      // If rowCount is 0, the WHERE clause failed (insufficient stock)
+      // If rowCount is 0, it means the stock was insufficient.
       if (updateResult.rowCount === 0) {
-        // If an item is out of stock, cancel the entire transaction
+        // Immediately cancel the entire transaction
         await client.query("ROLLBACK");
-        // Send a specific error message back to the user
         return res.status(409).json({
-          // 409 Conflict is a good status code for this
           error: `Checkout failed: Not enough stock for "${item.name}". Please review your cart.`,
           outOfStockItem: item.medication_id,
         });
       }
     }
 
-    // If all items were updated successfully, commit the transaction
+    // Process medical tests by creating new order records
+    for (const test of tests) {
+      const testId = parseInt(test.medication_id.split("_")[1]); // Extract the real test_id
+      if (isNaN(testId)) {
+        // If the ID is invalid, throw an error to cancel the transaction
+        throw new Error(`Invalid test ID found in cart: ${test.medication_id}`);
+      }
+      await client.query(
+        'INSERT INTO "TEST_ORDER" (patient_id, test_id, order_date, status) VALUES ($1, $2, NOW(), $3)',
+        [patient_id, testId, "Pending"]
+      );
+    }
+
+    // If all items were processed successfully, commit the transaction
     await client.query("COMMIT");
     res.status(200).json({ message: "Checkout successful!" });
   } catch (err) {
     // If any other error occurs, roll back the transaction
     await client.query("ROLLBACK");
     console.error("Error during checkout:", err.message);
-    res.status(500).json({ error: "A server error occurred during checkout." });
+    res
+      .status(500)
+      .json({
+        error: err.message || "A server error occurred during checkout.",
+      });
   } finally {
     // Release the database client back to the pool
     client.release();

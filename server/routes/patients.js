@@ -4,7 +4,6 @@ const pool = require("../db");
 
 // GET patient details by ID
 router.get("/:id", async (req, res) => {
-  // ✅ FIX: Convert ID to a number
   const patientId = parseInt(req.params.id, 10);
   if (isNaN(patientId)) {
     return res.status(400).json({ error: "Invalid patient ID." });
@@ -16,7 +15,6 @@ router.get("/:id", async (req, res) => {
       [patientId]
     );
 
-    // ✅ FIX: Correct "not found" logic
     if (rows.length === 0) {
       return res.status(404).json({ error: "Patient not found" });
     }
@@ -73,6 +71,59 @@ router.get("/:id/bookings", async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error("Error fetching patient room bookings:", err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+// GET all completed test reports for a specific patient
+router.get("/:id/reports", async (req, res) => {
+  const patientId = parseInt(req.params.id, 10);
+  if (isNaN(patientId)) {
+    return res.status(400).json({ error: "Invalid patient ID." });
+  }
+  try {
+    const query = `
+            SELECT 
+                o.order_id, o.order_date, o.result_pdf_name,
+                t.name as test_name
+            FROM "TEST_ORDER" o
+            JOIN "TEST" t ON o.test_id = t.test_id
+            WHERE o.patient_id = $1 AND o.status = 'Completed'
+            ORDER BY o.order_date DESC;
+        `;
+    const { rows } = await pool.query(query, [patientId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching test reports for patient:", err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+// GET a specific test report PDF to download
+router.get("/reports/:orderId/download", async (req, res) => {
+  const orderId = parseInt(req.params.orderId, 10);
+  if (isNaN(orderId)) {
+    return res.status(400).json({ error: "Invalid order ID." });
+  }
+  try {
+    const query =
+      'SELECT result_pdf_data, result_pdf_name FROM "TEST_ORDER" WHERE order_id = $1';
+    const { rows } = await pool.query(query, [orderId]);
+
+    if (rows.length === 0 || !rows[0].result_pdf_data) {
+      return res.status(404).send("Report not found.");
+    }
+
+    const { result_pdf_data, result_pdf_name } = rows[0];
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${result_pdf_name || "report.pdf"}"`
+    );
+    res.send(result_pdf_data);
+  } catch (err) {
+    console.error("Error downloading test report:", err.message);
     res.status(500).send("Server error");
   }
 });

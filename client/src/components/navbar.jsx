@@ -22,9 +22,7 @@ const Navbar = () => {
   const { cartItems } = useCart();
   const navigate = useNavigate();
 
-  // State for the logo animation
   const [animate, setAnimate] = useState(true);
-  // State to control the dropdown menu
   const [isMenuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -44,7 +42,7 @@ const Navbar = () => {
     if (isAuthenticated) patientLogout();
     if (isEmployeeAuthenticated) employeeLogout();
     if (isAdminAuthenticated) adminLogout();
-    setMenuOpen(false); // Close menu on logout
+    setMenuOpen(false);
     navigate("/");
   };
 
@@ -57,7 +55,11 @@ const Navbar = () => {
     ? "patient"
     : null;
 
-  // Define styles based on admin login status
+  // ✅ FIX: Determine if the checkups link should be visible
+  const showCheckupsLink =
+    isAuthenticated ||
+    (isEmployeeAuthenticated && employeeUser?.employee?.role === "Nurse");
+
   const navClass = isAdminAuthenticated
     ? "bg-red-800 text-white shadow-lg"
     : "bg-white shadow-md";
@@ -68,15 +70,7 @@ const Navbar = () => {
 
   return (
     <>
-      <style>
-        {`
-          @keyframes slideInFromLeft { 0% { transform: translateX(-100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
-          @keyframes slideInFromRight { 0% { transform: translateX(100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
-          .animate-slide-in-left { animation: slideInFromLeft 0.8s ease-out forwards; }
-          .animate-slide-in-right { animation: slideInFromRight 0.8s ease-out forwards; }
-        `}
-      </style>
-
+      <style>{`@keyframes slideInFromLeft { 0% { transform: translateX(-100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } } @keyframes slideInFromRight { 0% { transform: translateX(100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } } .animate-slide-in-left { animation: slideInFromLeft 0.8s ease-out forwards; } .animate-slide-in-right { animation: slideInFromRight 0.8s ease-out forwards; }`}</style>
       <nav
         className={`${navClass} sticky top-0 z-50 transition-colors duration-300`}
       >
@@ -115,6 +109,12 @@ const Navbar = () => {
             <Link to="/rooms" className={linkClass}>
               Book a Room
             </Link>
+            {/* ✅ FIX: Conditionally render the new "Medical Tests" link */}
+            {showCheckupsLink && (
+              <Link to="/checkups" className={linkClass}>
+                Medical Tests
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -131,7 +131,6 @@ const Navbar = () => {
                 </div>
               </Link>
             )}
-
             <div className="relative">
               {currentLoggedInUser ? (
                 <div>
@@ -163,8 +162,8 @@ const Navbar = () => {
                           onClick={() => setMenuOpen(false)}
                           className="px-4 py-2 text-gray-800 hover:bg-indigo-50 flex items-center w-full"
                         >
-                          <LayoutDashboard size={16} className="mr-2" />
-                          My Portal
+                          <LayoutDashboard size={16} className="mr-2" /> My
+                          Portal
                         </Link>
                       </li>
                       <li>
@@ -172,8 +171,7 @@ const Navbar = () => {
                           onClick={handleLogout}
                           className="px-4 py-2 text-red-600 hover:bg-red-50 flex items-center w-full"
                         >
-                          <LogOut size={16} className="mr-2" />
-                          Logout
+                          <LogOut size={16} className="mr-2" /> Logout
                         </button>
                       </li>
                     </ul>
@@ -182,8 +180,7 @@ const Navbar = () => {
               ) : (
                 <div className="relative group">
                   <button className="btn btn-primary">
-                    Portal Login
-                    <ChevronDown size={20} className="ml-1" />
+                    Portal Login <ChevronDown size={20} className="ml-1" />
                   </button>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 z-10">
                     <Link

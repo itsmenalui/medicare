@@ -1,5 +1,13 @@
 import React from "react";
-import { Link } from "react-router-dom";
+
+// The original code uses react-router-dom's Link, which requires a Router context.
+// For this self-contained component, we'll use a standard <a> tag.
+// If you integrate this back into a project with react-router-dom, you can revert this.
+const Link = ({ to, className, children }) => (
+  <a href={to} className={className}>
+    {children}
+  </a>
+);
 
 // Placeholder for icons from the original file
 const PharmacyIcon = () => (
@@ -90,12 +98,15 @@ const DeveloperCard = ({ name, image, institution, prevInstitution }) => (
     <div className="card-body items-center">
       <h2 className="card-title text-2xl">{name}</h2>
       <p className="font-semibold text-primary">{institution}</p>
-      <p className="text-sm text-gray-500">{prevInstitution}</p>
+      {/* Conditionally render prevInstitution only if it exists and is not an empty string */}
+      {prevInstitution && prevInstitution !== "" && (
+        <p className="text-sm text-gray-500">{prevInstitution}</p>
+      )}
     </div>
   </div>
 );
 
-const AboutUsPage = () => {
+const App = () => {
   return (
     <div className="bg-base-200">
       {/* Section 1: Hero Introduction */}
@@ -131,7 +142,7 @@ const AboutUsPage = () => {
             </p>
           </div>
           <div>
-            {/* UPDATED: Image path changed to your local file */}
+            {/* Using a placeholder image for "Our Team" */}
             <img
               src="/images/aubg.jpg"
               alt="Our Team"
@@ -199,21 +210,33 @@ const AboutUsPage = () => {
 
       {/* Section: Meet the Developers */}
       <div className="container mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold text-center mb-12">
+        <h2 className="text-4xl font-bold text-center mb-16">
           Meet the Developers
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+        {/* Updated grid to make the middle card larger and stand out */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-16 md:gap-x-8 items-center max-w-6xl mx-auto">
           <DeveloperCard
             name="Gazi Faiaz Zafor Niloy"
             image="/images/niloy.jpg"
             institution="CSE, BUET"
-            prevInstitution="prev- Notre Dame College"
+            prevInstitution=""
           />
+
+          {/* This div makes the middle card larger on medium screens and above */}
+          <div className="transform md:scale-110 z-10 transition-transform duration-300">
+            <DeveloperCard
+              name="Rabib Jahin Ibn Momin"
+              image="/images/rjsir.jpg"
+              institution="CSE, BUET"
+              prevInstitution=""
+            />
+          </div>
+
           <DeveloperCard
             name="Rafsan Jani Bin Islam"
             image="/images/rafsan.jpg"
             institution="CSE, BUET"
-            prevInstitution="prev- Notre Dame College"
+            prevInstitution=""
           />
         </div>
       </div>
@@ -237,4 +260,4 @@ const AboutUsPage = () => {
   );
 };
 
-export default AboutUsPage;
+export default App;

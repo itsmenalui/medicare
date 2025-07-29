@@ -34,10 +34,10 @@ import AmbulancePage from "./pages/AmbulancePage.jsx";
 import PrescriptionFormPage from "./pages/PrescriptionFormPage.jsx";
 import MyPrescriptionsPage from "./pages/MyPrescriptionsPage.jsx";
 import MyPreviousPrescriptionsPage from "./pages/MyPreviousPrescriptionsPage.jsx";
+import CheckupsPage from "./pages/CheckupsPage.jsx";
+import TestReportsPage from "./pages/TestReportsPage.jsx"; // NEW: Import the new TestReportsPage
 
 function App() {
-  // ✅ FIX: The provider wrappers have been removed from this file.
-  // They are correctly placed in your main.jsx file.
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-gray-50">
@@ -62,6 +62,16 @@ function App() {
             <Route path="/rooms" element={<RoomsPage />} />
             <Route path="/ai-help" element={<AIHelpPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+
+            {/* Add the new route for the checkups page with ProtectedRoute */}
+            <Route
+              path="/checkups"
+              element={
+                <ProtectedRoute role={["patient", "employee"]}>
+                  <CheckupsPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* --- ADMIN PROTECTED ROUTE --- */}
             <Route
@@ -103,6 +113,15 @@ function App() {
               element={
                 <ProtectedRoute role="patient">
                   <MyPrescriptionsPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW: Add the protected route for test reports */}
+            <Route
+              path="/portal/reports"
+              element={
+                <ProtectedRoute role="patient">
+                  <TestReportsPage />
                 </ProtectedRoute>
               }
             />

@@ -41,6 +41,7 @@ const patientRoutes = require("./routes/patients");
 const chatRoutes = require("./routes/chat");
 const adminRoutes = require("./routes/admin");
 const prescriptionRoutes = require("./routes/prescriptions"); // New
+const checkupRoutes = require("./routes/checkups");
 
 // --- MOUNT ROUTERS ---
 app.use("/api", authRoutes); // Handles /api/login, /api/signup, etc.
@@ -54,6 +55,7 @@ app.use("/api/patient", patientRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/prescriptions", prescriptionRoutes); // New
+app.use("/api/checkups", checkupRoutes);
 
 // --- SOCKET.IO REAL-TIME LOGIC ---
 io.on("connection", (socket) => {

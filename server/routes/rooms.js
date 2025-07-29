@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
-// GET all rooms
-// Path: /api/rooms
+// GET all rooms for the public view
 router.get("/", async (req, res) => {
   try {
     const query = `
@@ -22,8 +21,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST to book a room
-// Path: /api/rooms/book
+// POST to REQUEST a room booking
 router.post("/book", async (req, res) => {
   const { room_id, patient_id, check_in_date } = req.body;
   if (!room_id || !patient_id || !check_in_date) {
@@ -35,24 +33,19 @@ router.post("/book", async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
     const roomCheckQuery =
       'SELECT availability FROM "ROOM" WHERE room_id = $1 FOR UPDATE';
     const roomResult = await client.query(roomCheckQuery, [room_id]);
 
     if (roomResult.rows.length === 0) throw new Error("Room not found.");
     if (!roomResult.rows[0].availability) {
-      return res
-        .status(409)
-        .json({
-          error: "This room is no longer available. Please select another.",
-        });
+      return res.status(409).json({
+        error: "This room is no longer available. Please select another.",
+      });
     }
 
-    await client.query(
-      'UPDATE "ROOM" SET availability = false WHERE room_id = $1',
-      [room_id]
-    );
-    const insertBookingQuery = `INSERT INTO "ROOM_BOOKING" (room_id, patient_id, check_in_date) VALUES ($1, $2, $3) RETURNING *;`;
+    const insertBookingQuery = `INSERT INTO "ROOM_BOOKING" (room_id, patient_id, check_in_date, booking_status) VALUES ($1, $2, $3, 'pending') RETURNING *;`;
     const bookingResult = await client.query(insertBookingQuery, [
       room_id,
       patient_id,
@@ -60,15 +53,14 @@ router.post("/book", async (req, res) => {
     ]);
 
     await client.query("COMMIT");
-    res
-      .status(201)
-      .json({
-        message: "Room booked successfully!",
-        booking: bookingResult.rows[0],
-      });
+    res.status(201).json({
+      message:
+        "Your booking request has been sent successfully! You will be notified upon confirmation.",
+      booking: bookingResult.rows[0],
+    });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Error booking room:", err.message);
+    console.error("Error requesting room booking:", err.message);
     res.status(500).send("Server error");
   } finally {
     client.release();

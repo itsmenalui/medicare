@@ -16,6 +16,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "lucide-react": "^0.523.0",
+    "multer": "^2.0.2",
     "nodemon": "^3.1.10",
     "pg": "^8.16.2",
     "recharts": "^3.1.0",

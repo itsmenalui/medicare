@@ -36,16 +36,24 @@ const CheckoutPage = () => {
       setError("Please provide a delivery address.");
       return;
     }
+    // ✅ FIX: Ensure we have a patient ID before proceeding
+    if (!user?.patient?.patient_id) {
+      setError("Could not identify patient. Please log in again.");
+      return;
+    }
+
     setIsProcessing(true);
     setError("");
     try {
-      // ✅ FIX: Use the correct API endpoint for checkout
-      await axios.post("/api/pharmacy/checkout", { cartItems });
+      // ✅ FIX: Send the patient_id along with the cartItems
+      await axios.post("/api/pharmacy/checkout", {
+        cartItems,
+        patient_id: user.patient.patient_id,
+      });
       alert("Payment Successful! Your order has been placed.");
       clearCart();
       navigate("/pharmacy");
     } catch (err) {
-      // ✅ FIX: Display the specific error message from the backend
       if (err.response && err.response.data && err.response.data.error) {
         setError(err.response.data.error);
       } else {
@@ -95,13 +103,9 @@ const CheckoutPage = () => {
             </h2>
             <div className="space-y-4">
               {cartItems.map((item) => {
-                if (!item || typeof item.medication_id === "undefined") {
-                  return null;
-                }
                 const itemPrice = parseFloat(item.price) || 0;
                 const itemQuantity = parseInt(item.quantity) || 0;
                 const itemTotal = itemPrice * itemQuantity;
-
                 return (
                   <div
                     key={item.medication_id}
@@ -116,9 +120,7 @@ const CheckoutPage = () => {
                         className="w-20 h-20 rounded-lg object-cover"
                       />
                       <div>
-                        <h3 className="font-bold text-gray-800">
-                          {item.name || "Unknown Item"}
-                        </h3>
+                        <h3 className="font-bold text-gray-800">{item.name}</h3>
                         <p className="text-sm text-gray-500">
                           ৳{itemPrice.toFixed(2)} each
                         </p>
@@ -160,20 +162,20 @@ const CheckoutPage = () => {
             </h2>
             <div className="space-y-2 text-gray-600">
               <div className="flex justify-between">
-                <p>Subtotal:</p>{" "}
+                <p>Subtotal:</p>
                 <p className="font-medium text-gray-800">
                   ৳{subtotal.toFixed(2)}
                 </p>
               </div>
               <div className="flex justify-between">
-                <p>Tax (5%):</p>{" "}
+                <p>Tax (5%):</p>
                 <p className="font-medium text-gray-800">৳{tax.toFixed(2)}</p>
               </div>
             </div>
             <div className="flex justify-between font-bold text-2xl border-t mt-4 pt-4 text-gray-900">
-              <p>Total:</p> <p>৳{total.toFixed(2)}</p>
+              <p>Total:</p>
+              <p>৳{total.toFixed(2)}</p>
             </div>
-
             <form onSubmit={handleCheckout} className="mt-8">
               <h3 className="text-xl font-bold mb-4 text-gray-800">
                 Delivery Information

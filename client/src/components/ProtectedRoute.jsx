@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children, role }) => {
 
   const roles = Array.isArray(role) ? role : [role];
 
-  // ✅ FIX: Show a loading indicator while any of the relevant auth checks are in progress.
+  // Show a loading indicator while any of the relevant auth checks are in progress.
   if (
     (roles.includes("patient") && patientLoading) ||
     (roles.includes("employee") && employeeLoading) ||
@@ -25,23 +25,35 @@ const ProtectedRoute = ({ children, role }) => {
     );
   }
 
-  // Once loading is complete, perform the checks
-  if (roles.includes("admin")) {
-    if (isAdminAuthenticated) return children;
-    return <Navigate to="/admin/login" />;
+  // ✅ FIX: This new logic correctly checks if the user has ANY of the required roles.
+  let isAuthorized = false;
+  if (roles.includes("admin") && isAdminAuthenticated) {
+    isAuthorized = true;
+  }
+  if (roles.includes("employee") && isEmployeeAuthenticated) {
+    isAuthorized = true;
+  }
+  if (roles.includes("patient") && isPatientAuthenticated) {
+    isAuthorized = true;
   }
 
+  if (isAuthorized) {
+    return children;
+  }
+
+  // If the user is not authorized, redirect them to the appropriate login page.
+  // We check in order of privilege.
+  if (roles.includes("admin")) {
+    return <Navigate to="/admin/login" />;
+  }
+  if (roles.includes("employee")) {
+    return <Navigate to="/employee-login" />;
+  }
   if (roles.includes("patient")) {
-    if (isPatientAuthenticated) return children;
     return <Navigate to="/login" />;
   }
 
-  if (roles.includes("employee")) {
-    if (isEmployeeAuthenticated) return children;
-    return <Navigate to="/employee-login" />;
-  }
-
-  // Fallback if no role matches (should not happen in normal use)
+  // Fallback if no role matches
   return <Navigate to="/" />;
 };
 

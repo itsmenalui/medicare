@@ -11,6 +11,7 @@ import {
   Mail,
   Phone,
   Droplets,
+  FileText, // Import the icon for Test Reports
 } from "lucide-react";
 
 const PortalCard = ({ to, title, description, icon, color }) => (
@@ -68,11 +69,8 @@ const PatientPortalPage = () => {
     );
   }
 
-  // ✅ FIX: This defensive logic handles different user object structures.
-  // It checks for the nested 'patient' object first, then falls back to the top-level 'user' object.
   const patientData = user?.patient ? user.patient : user;
 
-  // Now, check if the resolved patient data is valid.
   if (!patientData || !patientData.patient_id) {
     return (
       <div className="text-center py-20 text-red-600 font-semibold text-lg">
@@ -85,7 +83,6 @@ const PatientPortalPage = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-6 py-12">
         <div className="mb-10">
-          {/* ✅ FIX: Use the safe 'patientData' variable */}
           <h1 className="text-5xl font-extrabold text-gray-900">
             Welcome back, {patientData.first_name || "Patient"}!
           </h1>
@@ -96,7 +93,6 @@ const PatientPortalPage = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            {/* ✅ FIX: Pass the safe 'patientData' variable */}
             <PatientProfileCard patient={patientData} />
           </div>
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -120,6 +116,14 @@ const PatientPortalPage = () => {
               description="Check your current and past medication."
               icon={<Pill size={28} className="text-indigo-800" />}
               color="bg-indigo-100"
+            />
+            {/* ✅ NEW: Added the Test Reports card */}
+            <PortalCard
+              to="/portal/reports"
+              title="Test Reports"
+              description="View and download your lab results."
+              icon={<FileText size={28} className="text-green-800" />}
+              color="bg-green-100"
             />
             <div className="md:col-span-2">
               <PortalCard
