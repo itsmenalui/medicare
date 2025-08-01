@@ -8,22 +8,31 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Configure CORS for Socket.IO to work in production
-const clientURL =
-  process.env.NODE_ENV === "production"
-    ? process.env.CLIENT_URL // We will set this variable in the final step
-    : "http://localhost:5173";
+// ✅ --- NEW, MORE ROBUST CORS CONFIGURATION ---
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL, // This is your Netlify URL
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // The 'origin' is the address of the website making the request
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+};
+// --- END OF NEW CORS CONFIGURATION ---
 
 const io = new Server(server, {
-  cors: {
-    origin: clientURL,
-    methods: ["GET", "POST"],
-  },
+  cors: corsOptions, // ✅ Use the new options
 });
 
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+app.use(cors(corsOptions)); // ✅ Use the new options here as well
 app.use(express.json());
 
 app.use((req, res, next) => {
