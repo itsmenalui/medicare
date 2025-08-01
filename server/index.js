@@ -8,9 +8,15 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
+// ✅ Configure CORS for Socket.IO to work in production
+const clientURL =
+  process.env.NODE_ENV === "production"
+    ? process.env.CLIENT_URL // We will set this variable in the final step
+    : "http://localhost:5173";
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: clientURL,
     methods: ["GET", "POST"],
   },
 });
@@ -42,7 +48,7 @@ const chatRoutes = require("./routes/chat");
 const adminRoutes = require("./routes/admin");
 const prescriptionRoutes = require("./routes/prescriptions");
 const checkupRoutes = require("./routes/checkups");
-const billingRoutes = require("./routes/billing"); // ✨ IMPORT THE NEW ROUTE
+const billingRoutes = require("./routes/billing");
 
 // --- MOUNT ROUTERS ---
 app.use("/api", authRoutes);
@@ -57,7 +63,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/checkups", checkupRoutes);
-app.use("/api/billing", billingRoutes); // ✨ USE THE NEW ROUTE
+app.use("/api/billing", billingRoutes);
 
 // --- SOCKET.IO REAL-TIME LOGIC ---
 io.on("connection", (socket) => {
