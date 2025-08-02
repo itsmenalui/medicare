@@ -2,13 +2,13 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
-// GET all doctors (handles search and filters for approved doctors)
+// GET all approved doctors with search
 router.get("/", async (req, res) => {
   const searchTerm = req.query.search || "";
   try {
     const query = `
-      SELECT 
-        d.doctor_id, d.license_number,
+      SELECT
+        d.doctor_id,
         e.first_name, e.last_name,
         dt.type_name AS specialization,
         dept.name as department_name
@@ -32,28 +32,32 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET a single doctor by ID
+// GET a single doctor's full details, including qualifications
 router.get("/:id", async (req, res) => {
   const doctorId = parseInt(req.params.id, 10);
   if (isNaN(doctorId)) {
     return res.status(400).json({ error: "Invalid doctor ID." });
   }
-
   try {
     const query = `
       SELECT
-        d.doctor_id, d.license_number, e.first_name, e.last_name, e.email,
-        dt.type_name AS specialization, dept.name as department_name
+        d.doctor_id, d.license_number, d.consultation_fee,
+        e.first_name, e.last_name, e.email,
+        dt.type_name AS specialization,
+        dept.name as department_name,
+        (SELECT array_agg(q.name || ', ' || q.institution)
+         FROM "DOCTOR_QUALIFICATION_MAP" dqm
+         JOIN "QUALIFICATION" q ON dqm.qualification_id = q.qualification_id
+         WHERE dqm.doctor_id = d.doctor_id) as qualifications
       FROM "DOCTOR" d
       JOIN "EMPLOYEE" e ON d.employee_id = e.employee_id
       JOIN "DOCTOR_TYPE" dt ON d.doctor_type_id = dt.doctor_type_id
       JOIN "DEPARTMENT" dept ON d.department_id = dept.department_id
-      WHERE d.doctor_id = $1;
+      WHERE d.doctor_id = $1 AND e.status = 'approved';
     `;
     const { rows } = await pool.query(query, [doctorId]);
-
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Doctor not found" });
+      return res.status(404).json({ error: "Doctor not found." });
     }
     res.json(rows[0]);
   } catch (err) {
@@ -62,45 +66,55 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// GET doctor's availability
+// GET a doctor's availability
 router.get("/:id/availability", async (req, res) => {
   const doctorId = parseInt(req.params.id, 10);
   if (isNaN(doctorId)) {
     return res.status(400).json({ error: "Invalid doctor ID." });
   }
   try {
-    const bookedSlotsResult = await pool.query(
-      "SELECT (appointment_date AT TIME ZONE 'utc') as utc_appointment_date FROM \"APPOINTMENT\" WHERE doctor_id = $1 AND appointment_date >= NOW()",
-      [doctorId]
-    );
-    const bookedISOs = new Set(
-      bookedSlotsResult.rows.map((r) =>
-        new Date(r.utc_appointment_date).toISOString()
+    const query = `
+      WITH potential_slots AS (
+        SELECT slot::timestamptz
+        FROM generate_series(
+          date_trunc('day', now() AT TIME ZONE 'utc'),
+          date_trunc('day', now() AT TIME ZONE 'utc') + interval '14 days',
+          '30 minutes'
+        ) as slot
+        WHERE
+          EXTRACT(ISODOW FROM slot) BETWEEN 1 AND 5 -- Monday to Friday
+          AND (slot::time >= '09:00' AND slot::time < '17:00') -- Working hours in UTC
       )
-    );
-    let allSlots = [];
-    const now = new Date();
-    for (let i = 0; i < 7; i++) {
-      const day = new Date();
-      day.setDate(day.getDate() + i);
-      const dayOfWeek = day.getDay();
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        for (let hour = 9; hour < 17; hour++) {
-          for (let minute = 0; minute < 60; minute += 30) {
-            const slotTime = new Date(day);
-            slotTime.setHours(hour, minute, 0, 0);
-            if (slotTime > now) {
-              const slotISO = slotTime.toISOString();
-              allSlots.push({
-                time: slotISO,
-                isBooked: bookedISOs.has(slotISO),
-              });
-            }
-          }
-        }
-      }
-    }
-    res.json(allSlots);
+      SELECT
+        p.slot as "time",
+        COALESCE(a.is_booked, d.is_booked, false) as "is_booked",
+        CASE
+          WHEN a.is_booked THEN 'appointment'
+          WHEN d.is_booked THEN 'unavailable'
+          ELSE 'available'
+        END as "status",
+        a.appointment_id
+      FROM potential_slots p
+      LEFT JOIN (
+        SELECT
+          appointment_date,
+          appointment_id,
+          true as is_booked
+        FROM "APPOINTMENT"
+        WHERE doctor_id = $1 AND status = 'Scheduled'
+      ) a ON p.slot = a.appointment_date
+      LEFT JOIN (
+        SELECT
+          unavailable_time,
+          true as is_booked
+        FROM "DOCTOR_UNAVAILABILITY"
+        WHERE doctor_id = $1
+      ) d ON p.slot = d.unavailable_time
+      WHERE p.slot > now()
+      ORDER BY p.slot;
+    `;
+    const { rows } = await pool.query(query, [doctorId]);
+    res.json(rows);
   } catch (err) {
     console.error(
       `Error fetching availability for doctor ${doctorId}:`,
@@ -110,32 +124,83 @@ router.get("/:id/availability", async (req, res) => {
   }
 });
 
+// ✅ FIX: This route is now more robust against timestamp format issues.
+// POST to mark a time slot as unavailable
+router.post("/:id/availability/unavailable", async (req, res) => {
+  const doctorId = parseInt(req.params.id, 10);
+  const { time_slot } = req.body;
+
+  if (isNaN(doctorId) || !time_slot) {
+    return res
+      .status(400)
+      .json({ error: "Invalid doctor ID or time slot provided." });
+  }
+
+  try {
+    // Explicitly cast the incoming time_slot to timestamptz to ensure format consistency.
+    const query = `INSERT INTO "DOCTOR_UNAVAILABILITY" (doctor_id, unavailable_time) VALUES ($1, $2::timestamptz)`;
+    await pool.query(query, [doctorId, time_slot]);
+    res
+      .status(200)
+      .json({ message: "Slot successfully marked as unavailable." });
+  } catch (err) {
+    if (err.code === "23505") {
+      // Handles unique constraint violation
+      return res.status(200).json({ message: "Slot was already unavailable." });
+    }
+    console.error(
+      `Error marking slot unavailable for doctor ${doctorId}:`,
+      err.message
+    );
+    res.status(500).send("Server error");
+  }
+});
+
+// ✨ NEW: Temporary route to check the database for unavailable slots.
+router.get("/:id/check-unavailability", async (req, res) => {
+  const doctorId = parseInt(req.params.id, 10);
+  if (isNaN(doctorId)) {
+    return res.status(400).json({ error: "Invalid doctor ID." });
+  }
+  try {
+    const { rows } = await pool.query(
+      'SELECT unavailable_time FROM "DOCTOR_UNAVAILABILITY" WHERE doctor_id = $1 ORDER BY unavailable_time DESC',
+      [doctorId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error checking unavailability:", err.message);
+    res.status(500).send("Server error");
+  }
+});
+
 // GET a doctor's appointments
 router.get("/:id/appointments", async (req, res) => {
   const doctorId = parseInt(req.params.id, 10);
-  // ✅ FIX: Get status from query. Default to 'Scheduled' for the main schedule page.
-  const status = req.query.status || "Scheduled";
-
   if (isNaN(doctorId)) {
     return res.status(400).json({ error: "Invalid doctor ID." });
   }
   try {
     const query = `
-      SELECT 
-        a.appointment_id, a.appointment_date, a.status, a.reason, a.patient_id,
-        p.first_name as patient_first_name, 
+      SELECT
+        a.appointment_id,
+        a.appointment_date,
+        a.status,
+        a.reason,
+        p.patient_id,
+        p.first_name as patient_first_name,
         p.last_name as patient_last_name,
         p.email as patient_email
-      FROM "APPOINTMENT" a 
+      FROM "APPOINTMENT" a
       JOIN "PATIENT" p ON a.patient_id = p.patient_id
-      WHERE a.doctor_id = $1 AND a.status = $2
-      ORDER BY a.appointment_date DESC;
+      WHERE a.doctor_id = $1
+      ORDER BY a.appointment_date ASC;
     `;
-    const { rows } = await pool.query(query, [doctorId, status]);
+    const { rows } = await pool.query(query, [doctorId]);
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching doctor appointments:", err.message);
-    res.status(500).send("Server error");
+    console.error("Error fetching appointments:", err.message);
+    res.status(500).send("Server Error");
   }
 });
 

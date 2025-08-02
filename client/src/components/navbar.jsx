@@ -19,24 +19,13 @@ const Navbar = () => {
   const { isEmployeeAuthenticated, employeeUser, employeeLogout } =
     useEmployeeAuth();
   const { isAdminAuthenticated, adminUser, adminLogout } = useAdminAuth();
-  const { cartItems } = useCart();
+
+  const { totalItemCount } = useCart();
+
   const navigate = useNavigate();
 
   const [animate, setAnimate] = useState(true);
   const [isMenuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const animationInterval = setInterval(() => {
-      setAnimate(false);
-      setTimeout(() => setAnimate(true), 10);
-    }, 2000);
-    return () => clearInterval(animationInterval);
-  }, []);
-
-  const totalCartItems = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
 
   const handleLogout = () => {
     if (isAuthenticated) patientLogout();
@@ -55,14 +44,15 @@ const Navbar = () => {
     ? "patient"
     : null;
 
-  // ✅ FIX: Determine if the checkups link should be visible
   const showCheckupsLink =
     isAuthenticated ||
     (isEmployeeAuthenticated && employeeUser?.employee?.role === "Nurse");
 
+  // ✨ UPDATED: The non-admin class now includes the RGB strip animation
   const navClass = isAdminAuthenticated
     ? "bg-red-800 text-white shadow-lg"
-    : "bg-white shadow-md";
+    : "shadow-md rgb-strip-bg";
+
   const linkClass = isAdminAuthenticated
     ? "text-gray-200 hover:text-white"
     : "text-gray-600 hover:text-indigo-600";
@@ -70,24 +60,92 @@ const Navbar = () => {
 
   return (
     <>
-      <style>{`@keyframes slideInFromLeft { 0% { transform: translateX(-100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } } @keyframes slideInFromRight { 0% { transform: translateX(100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } } .animate-slide-in-left { animation: slideInFromLeft 0.8s ease-out forwards; } .animate-slide-in-right { animation: slideInFromRight 0.8s ease-out forwards; }`}</style>
+      {/* ✨ UPDATED: Added RGB strip animation keyframes and styles */}
+      <style>{`
+        @keyframes slideInFromLeft { 
+          0% { transform: translateX(-100%); opacity: 0; } 
+          100% { transform: translateX(0); opacity: 1; } 
+        } 
+        @keyframes slideInFromRight { 
+          0% { transform: translateX(100%); opacity: 0; } 
+          100% { transform: translateX(0); opacity: 1; } 
+        } 
+        .animate-slide-in-left { 
+          animation: slideInFromLeft 1.5s ease-out infinite; 
+        } 
+        .animate-slide-in-right { 
+          animation: slideInFromRight 1.5s ease-out infinite; 
+        }
+
+        @keyframes animateGradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animated-gradient-bg {
+          background: linear-gradient(-45deg, #ffffff, #fdfdff, #f3f4ff, #f9f9ff);
+          background-size: 400% 400%;
+          animation: animateGradient 15s ease infinite;
+        }
+
+        @keyframes sweepAnimation {
+          0% { 
+            transform: translateX(-50%);
+          }
+          50% { 
+            transform: translateX(0%);
+          }
+          100% { 
+            transform: translateX(-50%);
+          }
+        }
+
+        .rgb-strip-bg {
+          position: relative;
+          background: #ffffff;
+          overflow: visible;
+        }
+
+        .rgb-strip-bg::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 200%;
+          height: 100%;
+          background: linear-gradient(90deg, 
+            transparent 0%, 
+            transparent 25%,
+            rgba(16, 185, 129, 0.4) 45%,
+            rgba(5, 150, 105, 0.5) 50%,
+            rgba(16, 185, 129, 0.4) 55%,
+            transparent 75%,
+            transparent 100%
+          );
+          animation: sweepAnimation 8s ease-in-out infinite;
+          z-index: 1;
+        }
+
+        .rgb-strip-bg > * {
+          position: relative;
+          z-index: 10;
+        }
+      `}</style>
       <nav
-        className={`${navClass} sticky top-0 z-50 transition-colors duration-300`}
+        className={`${navClass} sticky top-0 z-50 transition-colors duration-300 overflow-visible`}
       >
         <div className="container mx-auto px-6 py-3 flex justify-between items-center">
           <Link to="/" className="flex items-baseline overflow-hidden">
             <span
-              className={`text-4xl font-bold ${logoClass} ${
-                animate ? "animate-slide-in-left" : "opacity-0"
-              }`}
+              className={`text-4xl font-bold ${logoClass} animate-slide-in-left`}
             >
               M
             </span>
             <span className={`text-3xl font-bold ${logoClass}`}>ediCar</span>
             <span
-              className={`text-3xl font-bold ${logoClass} ${
-                animate ? "animate-slide-in-right" : "opacity-0"
-              }`}
+              className={`text-3xl font-bold ${logoClass} animate-slide-in-right`}
             >
               e
             </span>
@@ -109,7 +167,6 @@ const Navbar = () => {
             <Link to="/rooms" className={linkClass}>
               Book a Room
             </Link>
-            {/* ✅ FIX: Conditionally render the new "Medical Tests" link */}
             {showCheckupsLink && (
               <Link to="/checkups" className={linkClass}>
                 Medical Tests
@@ -118,7 +175,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {totalCartItems > 0 && !isAdminAuthenticated && (
+            {isAuthenticated && totalItemCount > 0 && (
               <Link
                 to="/checkout"
                 className="btn btn-circle bg-gray-700 text-white hover:bg-gray-600"
@@ -126,12 +183,12 @@ const Navbar = () => {
                 <div className="indicator">
                   <ShoppingCart size={24} />
                   <span className="badge badge-sm indicator-item badge-secondary">
-                    {totalCartItems}
+                    {totalItemCount}
                   </span>
                 </div>
               </Link>
             )}
-            <div className="relative">
+            <div className="relative z-[100]">
               {currentLoggedInUser ? (
                 <div>
                   <button
@@ -149,7 +206,7 @@ const Navbar = () => {
                     />
                   </button>
                   {isMenuOpen && (
-                    <ul className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-10">
+                    <ul className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-[9999]">
                       <li>
                         <Link
                           to={
@@ -182,7 +239,7 @@ const Navbar = () => {
                   <button className="btn btn-primary">
                     Portal Login <ChevronDown size={20} className="ml-1" />
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 z-10">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 z-[9999]">
                     <Link
                       to="/login"
                       className="px-4 py-2 text-gray-800 hover:bg-indigo-50 flex items-center w-full"

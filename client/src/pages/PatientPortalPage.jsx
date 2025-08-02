@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { usePatientAuth } from "../context/PatientAuthContext.jsx";
 import {
   Calendar,
@@ -11,7 +12,8 @@ import {
   Mail,
   Phone,
   Droplets,
-  FileText, // Import the icon for Test Reports
+  FileText,
+  Award, // Import the Award icon
 } from "lucide-react";
 
 const PortalCard = ({ to, title, description, icon, color }) => (
@@ -30,7 +32,7 @@ const PortalCard = ({ to, title, description, icon, color }) => (
   </Link>
 );
 
-const PatientProfileCard = ({ patient }) => (
+const PatientProfileCard = ({ patient, membership }) => ( // Accept membership as a prop
   <div className="bg-white p-6 rounded-2xl shadow-md h-full">
     <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">
       My Profile
@@ -54,85 +56,69 @@ const PatientProfileCard = ({ patient }) => (
         <Droplets className="w-5 h-5 text-gray-500 mr-3" />
         <span className="text-gray-700">Blood Type: {patient?.blood_type}</span>
       </div>
+      {/* ✅ FIX: Display membership tier if approved */}
+      {membership?.membership_level && membership?.membership_status === 'approved' && (
+        <div className="flex items-center pt-2 border-t mt-4">
+          <Award className="w-5 h-5 text-yellow-500 mr-3" />
+          <span className="text-gray-700 font-bold capitalize">{patient?.membership_level} Member</span>
+        </div>
+      )}
     </div>
   </div>
 );
 
 const PatientPortalPage = () => {
-  const { user, loading } = usePatientAuth();
+  const { user, loading: authLoading } = usePatientAuth();
+  const [membership, setMembership] = useState(null); // State for membership
+  const [loading, setLoading] = useState(true);
 
-  if (loading) {
-    return (
-      <div className="text-center py-20 font-semibold text-lg">
-        Loading Patient Portal...
-      </div>
-    );
+  useEffect(() => {
+    if (authLoading) return;
+    
+    const fetchMembership = async () => {
+      if (user?.patient?.patient_id) {
+        try {
+          const res = await axios.get(`/api/membership/status/${user.patient.patient_id}`);
+          setMembership(res.data);
+        } catch (err) {
+          console.error("Could not fetch membership status", err);
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchMembership();
+  }, [user, authLoading]);
+
+  if (authLoading || loading) {
+    return <div className="text-center py-20 font-semibold text-lg">Loading Patient Portal...</div>;
   }
 
-  const patientData = user?.patient ? user.patient : user;
+  const patientData = user?.patient;
 
   if (!patientData || !patientData.patient_id) {
-    return (
-      <div className="text-center py-20 text-red-600 font-semibold text-lg">
-        Could not load patient data. Please try logging in again.
-      </div>
-    );
+    return <div className="text-center py-20 text-red-600 font-semibold text-lg">Could not load patient data. Please try logging in again.</div>;
   }
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-5xl font-extrabold text-gray-900">
-            Welcome back, {patientData.first_name || "Patient"}!
-          </h1>
-          <p className="text-xl text-gray-600 mt-2">
-            This is your personal health dashboard. Manage your healthcare with
-            ease.
-          </p>
+          <h1 className="text-5xl font-extrabold text-gray-900">Welcome back, {patientData.first_name || "Patient"}!</h1>
+          <p className="text-xl text-gray-600 mt-2">This is your personal health dashboard. Manage your healthcare with ease.</p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <PatientProfileCard patient={patientData} />
+            <PatientProfileCard patient={patientData} membership={membership} />
           </div>
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <PortalCard
-              to="/portal/appointments"
-              title="My Appointments"
-              description="View past and upcoming appointments."
-              icon={<Calendar size={28} className="text-blue-800" />}
-              color="bg-blue-100"
-            />
-            <PortalCard
-              to="/portal/my-bookings"
-              title="My Room Bookings"
-              description="View your room booking history."
-              icon={<BedDouble size={28} className="text-teal-800" />}
-              color="bg-teal-100"
-            />
-            <PortalCard
-              to="/portal/prescriptions"
-              title="My Prescriptions"
-              description="Check your current and past medication."
-              icon={<Pill size={28} className="text-indigo-800" />}
-              color="bg-indigo-100"
-            />
-            {/* ✅ NEW: Added the Test Reports card */}
-            <PortalCard
-              to="/portal/reports"
-              title="Test Reports"
-              description="View and download your lab results."
-              icon={<FileText size={28} className="text-green-800" />}
-              color="bg-green-100"
-            />
+            <PortalCard to="/portal/appointments" title="My Appointments" description="View past and upcoming appointments." icon={<Calendar size={28} className="text-blue-800" />} color="bg-blue-100" />
+            <PortalCard to="/portal/my-bookings" title="My Room Bookings" description="View your room booking history." icon={<BedDouble size={28} className="text-teal-800" />} color="bg-teal-100" />
+            <PortalCard to="/portal/prescriptions" title="My Prescriptions" description="Check your current and past medication." icon={<Pill size={28} className="text-indigo-800" />} color="bg-indigo-100" />
+            <PortalCard to="/portal/reports" title="Test Reports" description="View and download your lab results." icon={<FileText size={28} className="text-green-800" />} color="bg-green-100" />
+            <PortalCard to="/portal/membership" title="Membership" description="View plans and get discounts." icon={<Award size={28} className="text-yellow-800" />} color="bg-yellow-100" />
             <div className="md:col-span-2">
-              <PortalCard
-                to="/portal/chat"
-                title="Chat with Staff"
-                description="Directly message doctors and other hospital staff."
-                icon={<MessageSquare size={28} className="text-pink-800" />}
-                color="bg-pink-100"
-              />
+              <PortalCard to="/portal/chat" title="Chat with Staff" description="Directly message doctors and other hospital staff." icon={<MessageSquare size={28} className="text-pink-800" />} color="bg-pink-100" />
             </div>
           </div>
         </div>

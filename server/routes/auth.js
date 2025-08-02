@@ -73,12 +73,11 @@ router.post("/login", async (req, res) => {
       const patientQuery = 'SELECT * FROM "PATIENT" WHERE patient_id = $1';
       const patientResult = await pool.query(patientQuery, [user.patient_id]);
       if (patientResult.rows.length > 0) {
-        // ✅ REVERTED FIX: Return the patient data as a nested object
         res.json({
           login_id: user.login_id,
           username: user.username,
           user_type: user.user_type,
-          patient: patientResult.rows[0], // This is the correct structure for your app
+          patient: patientResult.rows[0],
         });
       } else {
         return res
@@ -106,6 +105,7 @@ router.post("/employee/signup", async (req, res) => {
     license_number,
     department_name,
     doctor_type_id,
+    consultation_fee, // ✅ 1. Get the new fee from the request
   } = req.body;
   const client = await pool.connect();
   try {
@@ -131,9 +131,17 @@ router.post("/employee/signup", async (req, res) => {
     );
     const newEmployeeId = employeeResult.rows[0].employee_id;
     if (role === "Doctor") {
+      // ✅ 2. Update the INSERT query to include the new column
       await client.query(
-        `INSERT INTO "DOCTOR" (employee_id, department_id, doctor_type_id, license_number) VALUES ($1, $2, $3, $4);`,
-        [newEmployeeId, departmentId, doctor_type_id, license_number]
+        `INSERT INTO "DOCTOR" (employee_id, department_id, doctor_type_id, license_number, consultation_fee) VALUES ($1, $2, $3, $4, $5);`,
+        // ✅ 3. Add the new fee to the values array
+        [
+          newEmployeeId,
+          departmentId,
+          doctor_type_id,
+          license_number,
+          consultation_fee,
+        ]
       );
     } else if (role === "Nurse") {
       await client.query(
