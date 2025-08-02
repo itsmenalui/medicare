@@ -8,7 +8,8 @@ import axios from "axios";
 import io from "socket.io-client";
 import { Send, User } from "lucide-react";
 
-const socket = io("http://localhost:5001");
+// const socket = io("http://localhost:5001");
+const socket = io("https://medicare-api-v7gc.onrender.com");
 
 const ChatPage = () => {
   const location = useLocation(); // 2. Get the current URL location
@@ -29,7 +30,6 @@ const ChatPage = () => {
   const messagesEndRef = useRef(null);
 
   // ... The rest of your useEffects and functions are correct ...
-
 
   // Fetch contacts for the current user
   useEffect(() => {

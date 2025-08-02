@@ -8,16 +8,31 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
+// ✅ --- NEW, MORE ROBUST CORS CONFIGURATION ---
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL, // This is your Netlify URL
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // The 'origin' is the address of the website making the request
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
+};
+// --- END OF NEW CORS CONFIGURATION ---
+
+const io = new Server(server, {
+  cors: corsOptions, // ✅ Use the new options
 });
 
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+app.use(cors(corsOptions)); // ✅ Use the new options here as well
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -42,8 +57,6 @@ const chatRoutes = require("./routes/chat");
 const adminRoutes = require("./routes/admin");
 const prescriptionRoutes = require("./routes/prescriptions");
 const checkupRoutes = require("./routes/checkups");
-const billingRoutes = require("./routes/billing"); // ✨ IMPORT THE NEW ROUTE
-const membershipRoutes = require("./routes/membership");
 
 // --- MOUNT ROUTERS ---
 app.use("/api", authRoutes);
@@ -58,8 +71,6 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/checkups", checkupRoutes);
-app.use("/api/billing", billingRoutes); // ✨ USE THE NEW ROUTE
-app.use("/api/membership", membershipRoutes);
 
 // --- SOCKET.IO REAL-TIME LOGIC ---
 io.on("connection", (socket) => {

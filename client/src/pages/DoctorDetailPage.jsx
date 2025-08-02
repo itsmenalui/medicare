@@ -11,7 +11,10 @@ import {
   AlertCircle,
   XCircle,
 } from "lucide-react";
+<<<<<<< HEAD
 import { useCart } from "../context/CartContext";
+=======
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
 
 const DoctorDetailPage = () => {
   const { user } = useAuth();
@@ -101,7 +104,10 @@ const DoctorDetailPage = () => {
         message:
           "Appointment booked successfully! The consultation fee has been added to your cart.",
       });
+<<<<<<< HEAD
       refreshDbBillCount();
+=======
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
       setSelectedSlot("");
       setReason("");
       fetchSchedule(); // Refresh schedule to show the newly booked slot as unavailable

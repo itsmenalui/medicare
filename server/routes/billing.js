@@ -20,6 +20,10 @@ router.get("/:patient_id", async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
+=======
+// ✨ --- NEW ENDPOINT START --- ✨
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
 // GET the count of unpaid bills for a specific patient
 router.get("/count/:patient_id", async (req, res) => {
   const { patient_id } = req.params;
@@ -29,12 +33,20 @@ router.get("/count/:patient_id", async (req, res) => {
       WHERE patient_id = $1 AND status = 'unpaid';
     `;
     const { rows } = await pool.query(query, [patient_id]);
+<<<<<<< HEAD
+=======
+    // The result from COUNT(*) is in rows[0].count
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
     res.json({ count: parseInt(rows[0].count, 10) });
   } catch (err) {
     console.error("Error fetching patient bill count:", err.message);
     res.status(500).send("Server Error");
   }
 });
+<<<<<<< HEAD
+=======
+// ✨ --- NEW ENDPOINT END --- ✨
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
 
 // POST to mark all of a patient's bills as paid
 router.post("/pay", async (req, res) => {
@@ -43,6 +55,7 @@ router.post("/pay", async (req, res) => {
     return res.status(400).json({ error: "Patient ID is required." });
   }
 
+<<<<<<< HEAD
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -112,6 +125,19 @@ router.delete("/membership-application", async (req, res) => {
     res.status(500).json({ error: err.message || "Server Error" });
   } finally {
     client.release();
+=======
+  try {
+    const query = `
+      UPDATE "BILLING"
+      SET status = 'paid'
+      WHERE patient_id = $1 AND status = 'unpaid';
+    `;
+    await pool.query(query, [patient_id]);
+    res.status(200).json({ message: "All bills paid successfully!" });
+  } catch (err) {
+    console.error("Error processing payment:", err.message);
+    res.status(500).send("Server Error");
+>>>>>>> 0016227f2920aba7b94106773f8b559c31a0f683
   }
 });
 
