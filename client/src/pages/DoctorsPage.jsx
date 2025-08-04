@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import api from "../api/axios"; // ✨ FIX: Import 'api' from the custom axios file
 import { Link } from "react-router-dom";
 import { Search, Stethoscope, User } from "lucide-react";
 
@@ -38,7 +38,8 @@ const DoctorsPage = () => {
       setLoading(true);
       setError("");
       try {
-        const response = await axios.get("/doctors", {
+        // ✨ FIX: Use 'api' instead of 'axios' for the request
+        const response = await api.get("/doctors", {
           params: { search: searchTerm },
         });
         setDoctors(response.data);
