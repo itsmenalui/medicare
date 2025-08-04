@@ -7,8 +7,6 @@ const pool = require("../db");
 // GET all room booking requests
 router.get("/rooms/bookings", async (req, res) => {
   try {
-    // ✅ FIX: Rewrote the query using LEFT JOINs to be more robust.
-    // This prevents the entire query from failing if a single piece of related data is missing.
     const query = `
             SELECT 
                 rb.booking_id, rb.check_in_date, rb.booking_status,
@@ -29,36 +27,77 @@ router.get("/rooms/bookings", async (req, res) => {
   }
 });
 
-// POST to approve a room booking
+// POST to approve a room booking AND add the fee to billing
 router.post("/rooms/approve", async (req, res) => {
   const { booking_id } = req.body;
   const client = await pool.connect();
   try {
+    // Start transaction
     await client.query("BEGIN");
+
+    // Step 1: Get booking details (patient_id, room_id) and lock the row to prevent race conditions
     const bookingRes = await client.query(
-      "SELECT room_id FROM \"ROOM_BOOKING\" WHERE booking_id = $1 AND booking_status = 'pending'",
+      `SELECT room_id, patient_id FROM "ROOM_BOOKING" WHERE booking_id = $1 AND booking_status = 'pending' FOR UPDATE`,
       [booking_id]
     );
-    if (bookingRes.rows.length === 0)
-      throw new Error("Booking not found or already handled.");
-    const { room_id } = bookingRes.rows[0];
 
+    if (bookingRes.rows.length === 0) {
+      throw new Error("Booking not found or has already been processed.");
+    }
+    const { room_id, patient_id } = bookingRes.rows[0];
+
+    // Step 2: Get room details (cost_per_day, room_number) for the bill
+    const roomRes = await client.query(
+      `SELECT cost_per_day, room_number FROM "ROOM" WHERE room_id = $1`,
+      [room_id]
+    );
+
+    if (roomRes.rows.length === 0) {
+      throw new Error("Associated room could not be found.");
+    }
+    const { cost_per_day, room_number } = roomRes.rows[0];
+
+    // Step 3: Update the room's availability to false
     await client.query(
       'UPDATE "ROOM" SET availability = false WHERE room_id = $1',
       [room_id]
     );
+
+    // Step 4: Update the booking status to 'confirmed'
     await client.query(
       `UPDATE "ROOM_BOOKING" SET booking_status = 'confirmed' WHERE booking_id = $1`,
       [booking_id]
     );
 
+    // ✨ --- START: NEW BILLING LOGIC --- ✨
+    // Step 5: Create a new entry in the BILLING table for the room fee.
+    // This effectively adds the room cost to the patient's "cart".
+    const billDescription = `Room Booking Fee: Room ${room_number}`;
+    const billingQuery = `
+      INSERT INTO "BILLING" (patient_id, total_amount, description, status)
+      VALUES ($1, $2, $3, 'unpaid')
+    `;
+    await client.query(billingQuery, [
+      patient_id,
+      cost_per_day,
+      billDescription,
+    ]);
+    // ✨ --- END: NEW BILLING LOGIC --- ✨
+
+    // If all steps succeed, commit the transaction
     await client.query("COMMIT");
-    res.status(200).json({ message: "Booking approved successfully." });
+    res
+      .status(200)
+      .json({ message: "Booking approved and bill generated successfully." });
   } catch (err) {
+    // If any step fails, roll back the entire transaction
     await client.query("ROLLBACK");
-    console.error("Error approving booking:", err.message);
-    res.status(500).send("Server error");
+    console.error("Error during booking approval transaction:", err.message);
+    res
+      .status(500)
+      .json({ error: err.message || "Server error during booking approval." });
   } finally {
+    // Release the client back to the pool
     client.release();
   }
 });
@@ -67,10 +106,15 @@ router.post("/rooms/approve", async (req, res) => {
 router.post("/rooms/decline", async (req, res) => {
   const { booking_id } = req.body;
   try {
-    await pool.query(
+    const result = await pool.query(
       "DELETE FROM \"ROOM_BOOKING\" WHERE booking_id = $1 AND booking_status = 'pending'",
       [booking_id]
     );
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Booking not found or already handled." });
+    }
     res.status(200).json({ message: "Booking declined and removed." });
   } catch (err) {
     console.error("Error declining booking:", err.message);
@@ -79,6 +123,7 @@ router.post("/rooms/decline", async (req, res) => {
 });
 
 // --- AMBULANCE, DOCTOR, & NURSE MANAGEMENT (Your existing code) ---
+// (The rest of your admin.js file remains unchanged)
 
 // GET all ambulance details for the admin dashboard
 router.get("/ambulances/details", async (req, res) => {
@@ -281,6 +326,59 @@ router.post("/decline-nurse", async (req, res) => {
     res.status(500).send({ message: err.message || "Server Error" });
   } finally {
     client.release();
+  }
+});
+
+router.get("/membership-applications", async (req, res) => {
+  try {
+    // ✅ FIX: This query now correctly finds both new applications AND upgrades.
+    const query = `
+      SELECT 
+        patient_id, 
+        first_name, 
+        last_name, 
+        email, 
+        membership_level as current_level,
+        pending_upgrade_level
+      FROM "PATIENT"
+      WHERE 
+        membership_status = 'pending' OR pending_upgrade_level IS NOT NULL;
+    `;
+    const { rows } = await pool.query(query);
+
+    // This logic determines what the "requested" level is for the admin's view.
+    const applications = rows.map(row => ({
+      ...row,
+      requested_level: row.pending_upgrade_level || row.current_level
+    }));
+
+    res.json(applications);
+  } catch (err) {
+    console.error("Error fetching membership applications:", err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// POST to approve a membership application
+router.post("/approve-membership", async (req, res) => {
+  const { patient_id, new_level } = req.body;
+  try {
+    // ✅ FIX: This query now correctly finalizes an upgrade by clearing the pending_upgrade_level.
+    const result = await pool.query(
+      `UPDATE "PATIENT" 
+       SET membership_level = $1, 
+           membership_status = 'approved',
+           pending_upgrade_level = NULL
+       WHERE patient_id = $2`,
+      [new_level, patient_id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Application not found or already handled." });
+    }
+    res.status(200).json({ message: "Membership approved successfully." });
+  } catch (err) {
+    console.error("Error approving membership:", err.message);
+    res.status(500).send("Server Error");
   }
 });
 

@@ -7,7 +7,6 @@ const getMockAIResponse = async (message) => {
   const lowerCaseMessage = message.toLowerCase();
 
   // --- START OF YOUR CUSTOM AI KNOWLEDGE BASE ---
-  // You can add more questions and answers here.
 
   // --- Appointments & Services ---
   if (
@@ -24,9 +23,11 @@ const getMockAIResponse = async (message) => {
   }
   if (
     lowerCaseMessage.includes("find a specific doctor") ||
-    lowerCaseMessage.includes("doctor information")
+    lowerCaseMessage.includes("doctor information") ||
+    lowerCaseMessage.includes("find a specialist") ||
+    lowerCaseMessage.includes("department")
   ) {
-    return "Yes, you can search for our doctors by name or specialty on the 'Find a Doctor' page. There you will find their qualifications and department information.";
+    return "Yes, you can search for our doctors by name or specialty on the 'Find a Doctor' page. We have departments for Cardiology, Pediatrics, Orthopedics, and more. There you will find their qualifications and department information.";
   }
 
   // --- General Information ---
@@ -40,7 +41,7 @@ const getMockAIResponse = async (message) => {
     lowerCaseMessage.includes("location") ||
     lowerCaseMessage.includes("address")
   ) {
-    return "We are located at 123 Health St, Wellness City. You can find a map and directions on our website's contact page.";
+    return "We are located at 123 Health Road, Gulshan, Dhaka, Bangladesh. You can find a map and directions on our website's contact page.";
   }
   if (
     lowerCaseMessage.includes("visiting hours") ||
@@ -50,42 +51,59 @@ const getMockAIResponse = async (message) => {
     return "General visiting hours for inpatient rooms are from 11:00 AM to 1:00 PM and from 5:00 PM to 8:00 PM every day. Please check with the specific ward for any variations.";
   }
 
-  // --- Contact & Emergency ---
+  // --- Patient Records & Results ---
   if (
-    lowerCaseMessage.includes("contact") ||
-    lowerCaseMessage.includes("phone number")
+    lowerCaseMessage.includes("test results") ||
+    lowerCaseMessage.includes("lab report")
   ) {
-    // CORRECTED TYPO HERE
-    return "You can reach our main reception at 01936580923. For emergencies, please dial 999 immediately. All contact details are on our website.";
+    // CHANGED: Updated the response to direct users to their profile.
+    return "You can find all your latest test results by logging into your patient account. Once logged in, please visit your profile page to view or download the reports.";
   }
-  if (lowerCaseMessage.includes("emergency")) {
-    // CORRECTED TYPO HERE
-    return "In case of a medical emergency, please call our dedicated emergency hotline at 999 or visit our Emergency Department immediately. We are open 24/7.";
+  if (
+    lowerCaseMessage.includes("medical records") ||
+    lowerCaseMessage.includes("patient file")
+  ) {
+    // CHANGED: Updated the response to direct users to their profile.
+    return "To access your medical records, please log in to your account and navigate to your profile section. All your records are available there for viewing and download.";
   }
 
   // --- Cost & Insurance ---
-  if (lowerCaseMessage.includes("cost") || lowerCaseMessage.includes("price")) {
-    return "The cost of a consultation or procedure varies. For detailed pricing, please contact our billing department at 555-5678 during business hours.";
+  if (
+    lowerCaseMessage.includes("cost") ||
+    lowerCaseMessage.includes("price") ||
+    lowerCaseMessage.includes("payment options") ||
+    lowerCaseMessage.includes("pay my bill")
+  ) {
+    return "The cost of services varies. You can pay your bill at the main cashier, via our website's payment portal, or through mobile banking services like bKash. For detailed pricing or billing questions, please contact our billing department at 555-5678.";
   }
   if (lowerCaseMessage.includes("insurance")) {
     return "We accept a wide range of health insurance providers. To confirm if your specific plan is accepted, please call our insurance verification team at 555-8765.";
   }
 
-  // --- Pharmacy ---
+  // --- Pharmacy & Amenities ---
   if (
     lowerCaseMessage.includes("pharmacy") ||
     lowerCaseMessage.includes("medicine")
   ) {
-    return "Our pharmacy is open 24/7. You can visit in person or use our online pharmacy service on the website to order medications for delivery.";
+    return "Our pharmacy is open 24/7, located on the ground floor. You can visit in person or use our online pharmacy service on the website to order medications for delivery.";
+  }
+  if (
+    lowerCaseMessage.includes("cafeteria") ||
+    lowerCaseMessage.includes("food") ||
+    lowerCaseMessage.includes("canteen")
+  ) {
+    return "Our hospital cafeteria is on the 2nd floor and is open from 7:00 AM to 9:00 PM daily. It serves a variety of meals, snacks, and beverages.";
   }
 
-  // --- Basic Medical Questions ---
+  // --- Contact & Emergency ---
   if (
-    lowerCaseMessage.includes("fever") ||
-    lowerCaseMessage.includes("headache") ||
-    lowerCaseMessage.includes("flu")
+    lowerCaseMessage.includes("contact") ||
+    lowerCaseMessage.includes("phone number")
   ) {
-    return "For symptoms like fever or a headache, it's best to consult with a doctor to get a proper diagnosis. You can book an appointment with one of our general physicians online. Please remember, this is not medical advice.";
+    return "You can reach our main reception at 01936580923. For emergencies, please dial 999 immediately. All contact details are on our website.";
+  }
+  if (lowerCaseMessage.includes("emergency")) {
+    return "In case of a medical emergency, please call our dedicated emergency hotline at 999 or visit our Emergency Department immediately. We are open 24/7.";
   }
 
   // --- Greetings ---
@@ -111,6 +129,19 @@ const AIHelpPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const suggestionTopics = [
+    "Book Appointment",
+    "Our Services",
+    "Payment Options",
+    "Get Test Results",
+    "Medical Records",
+    "Find a Specialist",
+    "Visiting Hours",
+    "Cafeteria Hours",
+    "Pharmacy",
+    "Emergency Contact",
+  ];
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -126,20 +157,18 @@ const AIHelpPage = () => {
     ]);
   }, []);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const processUserMessage = async (messageText) => {
+    if (!messageText.trim() || isLoading) return;
 
-    const userMessage = { text: input, sender: "user" };
+    const userMessage = { text: messageText, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
-    // Simulate a short delay to feel like a real AI is "thinking"
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     try {
-      const aiResponse = await getMockAIResponse(input);
+      const aiResponse = await getMockAIResponse(messageText);
       const aiMessage = { text: aiResponse, sender: "ai" };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -152,6 +181,11 @@ const AIHelpPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    processUserMessage(input);
   };
 
   return (
@@ -201,7 +235,25 @@ const AIHelpPage = () => {
         </div>
       </main>
 
-      <footer className="bg-white p-4">
+      <footer className="bg-white p-4 border-t border-gray-200">
+        <div className="mb-3 px-2">
+          <p className="text-sm text-gray-500 mb-2">
+            Or select a topic to get started:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {suggestionTopics.map((topic) => (
+              <button
+                key={topic}
+                className="btn btn-sm btn-outline btn-info"
+                disabled={isLoading}
+                onClick={() => processUserMessage(topic)}
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSendMessage} className="flex gap-4">
           <input
             type="text"

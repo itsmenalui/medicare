@@ -40,11 +40,13 @@ const pharmacyRoutes = require("./routes/pharmacy");
 const patientRoutes = require("./routes/patients");
 const chatRoutes = require("./routes/chat");
 const adminRoutes = require("./routes/admin");
-const prescriptionRoutes = require("./routes/prescriptions"); // New
+const prescriptionRoutes = require("./routes/prescriptions");
 const checkupRoutes = require("./routes/checkups");
+const billingRoutes = require("./routes/billing"); // ✨ IMPORT THE NEW ROUTE
+const membershipRoutes = require("./routes/membership");
 
 // --- MOUNT ROUTERS ---
-app.use("/api", authRoutes); // Handles /api/login, /api/signup, etc.
+app.use("/api", authRoutes);
 app.use("/api/pharmacy", pharmacyRoutes);
 app.use("/api/diseases", diseaseRoutes);
 app.use("/api/doctors", doctorRoutes);
@@ -54,8 +56,10 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/prescriptions", prescriptionRoutes); // New
+app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/checkups", checkupRoutes);
+app.use("/api/billing", billingRoutes); // ✨ USE THE NEW ROUTE
+app.use("/api/membership", membershipRoutes);
 
 // --- SOCKET.IO REAL-TIME LOGIC ---
 io.on("connection", (socket) => {

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";
-import axios from "axios";
-import { Eye, FileText, ArrowLeft } from "lucide-react";
+import api from "../api/axios"; // Use the custom api instance
+import { Eye, FileText, ArrowLeft, Loader } from "lucide-react";
 import PrescriptionModal from "../components/PrescriptionModal";
 
 const MyPreviousPrescriptionsPage = () => {
@@ -28,9 +28,8 @@ const MyPreviousPrescriptionsPage = () => {
       setLoading(true);
       setError("");
       try {
-        // ✅ FIX: Request only appointments with status 'Done'
-        const res = await axios.get(
-          `/api/doctors/${employeeUser.employee.doctor_id}/appointments?status=Done`
+        const res = await api.get(
+          `/doctors/${employeeUser.employee.doctor_id}/appointments?status=Done`
         );
         setAppointments(res.data);
       } catch (err) {
@@ -39,7 +38,9 @@ const MyPreviousPrescriptionsPage = () => {
         setLoading(false);
       }
     };
-    fetchDoneAppointments();
+    if (employeeUser) {
+      fetchDoneAppointments();
+    }
   }, [employeeUser]);
 
   const handleViewPrescription = async (appointment) => {
@@ -47,10 +48,10 @@ const MyPreviousPrescriptionsPage = () => {
     setShowModal(true);
     try {
       const [presRes, patRes] = await Promise.all([
-        axios.get(
-          `/api/appointments/${appointment.appointment_id}/prescription`
+        api.get(
+          `/appointments/${appointment.appointment_id}/prescription`
         ),
-        axios.get(`/api/patient/${appointment.patient_id}`),
+        api.get(`/patient/${appointment.patient_id}`),
       ]);
 
       setModalData({
@@ -113,7 +114,9 @@ const MyPreviousPrescriptionsPage = () => {
                   </div>
                   <div className="text-gray-600">{app.patient_email}</div>
                   <div className="text-gray-500 text-sm">
-                    Date: {new Date(app.appointment_date).toLocaleString()}
+                    {/* CORRECTED: Use consistent date and time formatting */}
+                    Date: {new Date(app.appointment_date).toLocaleDateString()}
+                    , {new Date(app.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 <button
@@ -127,14 +130,19 @@ const MyPreviousPrescriptionsPage = () => {
           </div>
         )}
 
-        {showModal && (
-          <PrescriptionModal
-            prescription={modalData.prescription}
-            patient={modalData.patient}
-            doctor={modalData.doctor}
-            onClose={() => setShowModal(false)}
-          />
-        )}
+        {showModal &&
+          (modalLoading ? (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+              <Loader className="text-white animate-spin" size={48} />
+            </div>
+          ) : (
+            <PrescriptionModal
+              prescription={modalData.prescription}
+              patient={modalData.patient}
+              doctor={modalData.doctor}
+              onClose={() => setShowModal(false)}
+            />
+          ))}
       </div>
     </div>
   );

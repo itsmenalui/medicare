@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { usePatientAuth } from "../context/PatientAuthContext";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import { useCart } from "../context/CartContext"; // ✅ FIX: Import useCart
 import { Phone, CheckCircle, XCircle, Wrench } from "lucide-react";
 
 const AmbulancePage = () => {
@@ -11,6 +12,7 @@ const AmbulancePage = () => {
   const [error, setError] = useState(null);
 
   const { user: patientUser } = usePatientAuth();
+  const { refreshDbBillCount } = useCart(); // ✅ FIX: Get the refresh function
   const isUserLoggedIn = !!patientUser;
 
   useEffect(() => {
@@ -44,10 +46,14 @@ const AmbulancePage = () => {
         ambulance_id: ambulanceId,
         patient_id: patientUser.patient.patient_id,
       });
+      
       // Refresh the list to show the updated status
       const response = await axios.get("/api/ambulances");
       setAmbulances(response.data);
+      
+      refreshDbBillCount(); // ✅ FIX: Refresh the cart count immediately
       alert("Ambulance booked successfully!");
+
     } catch (err) {
       alert(err.response?.data?.error || "An error occurred while booking.");
     }

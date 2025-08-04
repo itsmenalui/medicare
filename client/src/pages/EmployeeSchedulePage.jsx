@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";
-import axios from "axios";
-import { Calendar, Clock, User, FileText, Eye, Loader } from "lucide-react";
+import api from "../api/axios"; // Use the custom api instance
+import {
+  Calendar,
+  Clock,
+  User,
+  FileText,
+  Eye,
+  Loader,
+  ArrowLeft,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-// ✅ FIX: Import the new modal component
 import PrescriptionModal from "../components/PrescriptionModal";
 
+// --- Reusable Appointment Card Component ---
 const AppointmentCard = ({ appointment, onSelectAppointment }) => {
   const navigate = useNavigate();
+  const appointmentDate = new Date(appointment.appointment_date);
 
   return (
     <div
       className={`p-6 rounded-2xl shadow-md border ${
-        new Date(appointment.appointment_date) < new Date()
+        appointmentDate < new Date()
           ? "bg-gray-100 border-gray-200"
           : "bg-white border-blue-100"
       }`}
@@ -42,24 +51,22 @@ const AppointmentCard = ({ appointment, onSelectAppointment }) => {
         <div className="flex items-center">
           <Calendar size={16} className="mr-3 text-gray-500" />
           <span>
-            {new Date(appointment.appointment_date).toLocaleDateString(
-              "en-US",
-              {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }
-            )}
+            {appointmentDate.toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </span>
         </div>
         <div className="flex items-center">
           <Clock size={16} className="mr-3 text-gray-500" />
           <span>
-            {new Date(appointment.appointment_date).toLocaleTimeString(
-              "en-US",
-              { hour: "2-digit", minute: "2-digit", hour12: true }
-            )}
+            {appointmentDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })}
           </span>
         </div>
         <div className="flex items-start">
@@ -93,13 +100,13 @@ const AppointmentCard = ({ appointment, onSelectAppointment }) => {
   );
 };
 
+// --- Main Page Component ---
 const EmployeeSchedulePage = () => {
   const { employeeUser, loading: authLoading } = useEmployeeAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ FIX: Add state for the new modal
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({
     prescription: null,
@@ -108,6 +115,10 @@ const EmployeeSchedulePage = () => {
   });
   const [modalLoading, setModalLoading] = useState(false);
 
+  const [availability, setAvailability] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
+
+  // Fetch appointments
   useEffect(() => {
     const refreshAppointments = async () => {
       if (!employeeUser || !employeeUser.employee?.doctor_id) {
@@ -116,8 +127,8 @@ const EmployeeSchedulePage = () => {
       }
       setLoading(true);
       try {
-        const response = await axios.get(
-          `/api/doctors/${employeeUser.employee.doctor_id}/appointments`
+        const response = await api.get(
+          `/doctors/${employeeUser.employee.doctor_id}/appointments`
         );
         setAppointments(response.data);
         setError(null);
@@ -133,22 +144,42 @@ const EmployeeSchedulePage = () => {
     }
   }, [employeeUser, authLoading]);
 
-  // ✅ FIX: New function to handle viewing the prescription
+  // Function to fetch availability
+  const fetchAvailability = async () => {
+    if (!employeeUser || !employeeUser.employee?.doctor_id) return;
+    setAvailabilityLoading(true);
+    try {
+      const res = await api.get(
+        `/doctors/${employeeUser.employee.doctor_id}/availability`
+      );
+      setAvailability(res.data);
+    } catch (error) {
+      console.error("Could not fetch availability", error);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading && employeeUser) {
+      fetchAvailability();
+    }
+  }, [employeeUser, authLoading]);
+
+  // Handle viewing a prescription
   const handleViewPrescription = async (appointment) => {
     setModalLoading(true);
     setShowModal(true);
     try {
       const [presRes, patRes] = await Promise.all([
-        axios.get(
-          `/api/appointments/${appointment.appointment_id}/prescription`
-        ),
-        axios.get(`/api/patient/${appointment.patient_id}`),
+        api.get(`/appointments/${appointment.appointment_id}/prescription`),
+        api.get(`/patients/${appointment.patient_id}`),
       ]);
 
       setModalData({
         prescription: presRes.data,
         patient: patRes.data,
-        doctor: employeeUser.employee, // We already have doctor data
+        doctor: employeeUser.employee,
       });
     } catch {
       alert("Could not load full prescription details.");
@@ -158,7 +189,41 @@ const EmployeeSchedulePage = () => {
     }
   };
 
-  if (loading)
+  // Group schedule by day for a better UI
+  const groupedSchedule = useMemo(() => {
+    return availability.reduce((acc, slot) => {
+      const date = new Date(slot.time).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(slot);
+      return acc;
+    }, {});
+  }, [availability]);
+
+  // Function to mark a slot as unavailable
+  const handleMarkSlotUnavailable = async (timeSlot) => {
+    if (!confirm("Are you sure you want to make this time slot unavailable?"))
+      return;
+
+    try {
+      await api.post(
+        `/doctors/${employeeUser.employee.doctor_id}/availability/unavailable`,
+        { time_slot: timeSlot }
+      );
+      fetchAvailability();
+      alert("Slot successfully marked as unavailable!");
+    } catch (error) {
+      console.error("Failed to mark slot unavailable:", error);
+      alert("Failed to mark slot as unavailable. Please try again.");
+    }
+  };
+
+  if (loading || authLoading)
     return (
       <div className="text-center py-20 font-semibold text-lg">
         Loading Your Schedule...
@@ -179,7 +244,7 @@ const EmployeeSchedulePage = () => {
             to="/employee-portal"
             className="p-2 rounded-full hover:bg-gray-200 mr-4"
           >
-            <User size={24} className="text-gray-700" />
+            <ArrowLeft size={24} className="text-gray-700" />
           </Link>
           <div>
             <h1 className="text-5xl font-extrabold text-gray-900">
@@ -212,7 +277,69 @@ const EmployeeSchedulePage = () => {
           </div>
         )}
 
-        {/* ✅ FIX: Render the new modal */}
+        {/* --- Availability Management Section --- */}
+        <div className="mt-16">
+          <h2 className="text-4xl font-bold text-gray-900 border-b pb-4 mb-8">
+            Manage My Availability
+          </h2>
+          {availabilityLoading ? (
+            <div className="text-center">Loading availability...</div>
+          ) : (
+            <div className="space-y-6">
+              {Object.keys(groupedSchedule).length > 0 ? (
+                Object.keys(groupedSchedule).map((date) => (
+                  <div
+                    key={date}
+                    className="bg-white p-6 rounded-2xl shadow-md"
+                  >
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">
+                      {date}
+                    </h3>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 gap-3">
+                      {/* ✅ FIX: Refined button rendering logic for clarity */}
+                      {groupedSchedule[date].map((slot) => {
+                        const isAvailable = slot.status === "available";
+                        const capitalStatus =
+                          slot.status.charAt(0).toUpperCase() +
+                          slot.status.slice(1);
+
+                        return (
+                          <button
+                            key={slot.time}
+                            disabled={!isAvailable}
+                            onClick={() => handleMarkSlotUnavailable(slot.time)}
+                            className={`py-2 px-1 rounded-lg text-sm font-semibold border transition text-center shadow-sm ${
+                              isAvailable
+                                ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-200 hover:shadow-md"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
+                            }`}
+                            title={
+                              isAvailable
+                                ? "Click to mark as unavailable"
+                                : `Slot is ${capitalStatus}`
+                            }
+                          >
+                            {new Date(slot.time).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  No upcoming availability slots found in your schedule.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Prescription Modal */}
         {showModal &&
           (modalLoading ? (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">

@@ -36,6 +36,7 @@ import MyPrescriptionsPage from "./pages/MyPrescriptionsPage.jsx";
 import MyPreviousPrescriptionsPage from "./pages/MyPreviousPrescriptionsPage.jsx";
 import CheckupsPage from "./pages/CheckupsPage.jsx";
 import TestReportsPage from "./pages/TestReportsPage.jsx"; // NEW: Import the new TestReportsPage
+import MembershipPage from "./pages/MembershipPage.jsx";
 
 function App() {
   return (
@@ -176,6 +177,14 @@ function App() {
                   <ChatPage />
                 </ProtectedRoute>
               }
+              />
+              <Route
+              path="/portal"
+              element={<ProtectedRoute role="patient"><PatientPortalPage /></ProtectedRoute>}
+            />
+            <Route // ✨ ADD THIS WHOLE ROUTE
+              path="/portal/membership"
+              element={<ProtectedRoute role="patient"><MembershipPage /></ProtectedRoute>}
             />
           </Routes>
         </main>

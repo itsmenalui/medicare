@@ -9,6 +9,7 @@ import {
   Stethoscope,
   Award,
   Building,
+  DollarSign, // ✅ 1. Import the new icon
 } from "lucide-react";
 
 const EmployeeSignupPage = () => {
@@ -22,6 +23,7 @@ const EmployeeSignupPage = () => {
     license_number: "",
     department_name: "",
     doctor_type_id: "",
+    consultation_fee: "", // ✅ 2. Add the new field to the form state
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -55,9 +57,11 @@ const EmployeeSignupPage = () => {
 
     if (role === "Doctor") {
       payload.doctor_type_id = formData.doctor_type_id;
+      payload.consultation_fee = formData.consultation_fee; // ✅ 3. Add the fee to the payload
     }
 
     try {
+      // Using the custom api instance is better, but this will work
       await axios.post("/api/employee/signup", payload);
       setSuccess("Account submitted! Please wait for admin approval.");
     } catch (err) {
@@ -233,20 +237,37 @@ const EmployeeSignupPage = () => {
                   </div>
                 </div>
 
+                {/* ✅ 4. Conditionally render the new fields for Doctors */}
                 {role === "Doctor" && (
-                  <div className="relative animate-fadeIn">
-                    <Stethoscope
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      size={20}
-                    />
-                    <input
-                      name="doctor_type_id"
-                      type="number"
-                      placeholder="Doctor Type ID"
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 border rounded-lg"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t animate-fadeIn">
+                    <div className="relative">
+                      <Stethoscope
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        size={20}
+                      />
+                      <input
+                        name="doctor_type_id"
+                        type="number"
+                        placeholder="Doctor Type ID"
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-3 py-2 border rounded-lg"
+                        required
+                      />
+                    </div>
+                    <div className="relative">
+                      <DollarSign
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        size={20}
+                      />
+                      <input
+                        name="consultation_fee"
+                        type="number"
+                        placeholder="Consultation Fee"
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-3 py-2 border rounded-lg"
+                        required
+                      />
+                    </div>
                   </div>
                 )}
 

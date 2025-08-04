@@ -2,16 +2,31 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { usePatientAuth as useAuth } from "../context/PatientAuthContext";
+import {
+  Stethoscope,
+  Calendar,
+  Clock,
+  DollarSign,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+
 const DoctorDetailPage = () => {
   const { user } = useAuth();
   const { id } = useParams();
+  const { refreshDbBillCount } = useCart();
   const [doctor, setDoctor] = useState(null);
   const [schedule, setSchedule] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [bookingStatus, setBookingStatus] = useState("");
+  const [bookingStatus, setBookingStatus] = useState({
+    state: "idle",
+    message: "",
+  });
 
   const fetchSchedule = useCallback(async () => {
     try {
@@ -40,13 +55,12 @@ const DoctorDetailPage = () => {
     initialFetch();
   }, [id, fetchSchedule]);
 
-  // **IMPROVEMENT: Group schedule by day for a better UI**
   const groupedSchedule = useMemo(() => {
     return schedule.reduce((acc, slot) => {
       const date = new Date(slot.time).toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
-        month: "short",
+        month: "long",
         day: "numeric",
       });
       if (!acc[date]) {
@@ -59,115 +73,160 @@ const DoctorDetailPage = () => {
 
   const handleBooking = async (e) => {
     e.preventDefault();
-    if (!user || !user.patient) {
-      setError("You must be logged in as a patient to book an appointment.");
+    if (!selectedSlot) {
+      setError("Please select a time slot.");
       return;
     }
-    if (!selectedSlot || !reason) {
-      setError("Please select a time slot and provide a reason for the visit.");
+    if (!reason) {
+      setError("Please provide a reason for your visit.");
+      return;
+    }
+    if (!user?.patient?.patient_id) {
+      setError("You must be logged in to book an appointment.");
       return;
     }
 
-    setBookingStatus("booking");
+    setBookingStatus({ state: "booking", message: "" });
     setError("");
+
     try {
       await axios.post("/api/appointments", {
-        doctor_id: doctor.doctor_id,
+        doctor_id: id,
+        patient_id: user.patient.patient_id,
         appointment_date: selectedSlot,
         reason: reason,
-        patient_id: user.patient.patient_id,
       });
-      setBookingStatus("success");
-      await fetchSchedule();
+      setBookingStatus({
+        state: "success",
+        message:
+          "Appointment booked successfully! The consultation fee has been added to your cart.",
+      });
+      refreshDbBillCount();
       setSelectedSlot("");
       setReason("");
+      fetchSchedule(); // Refresh schedule to show the newly booked slot as unavailable
     } catch (err) {
-      setBookingStatus("error");
-      setError(err.response?.data?.error || "Could not book appointment.");
-    } finally {
-      setTimeout(() => setBookingStatus(""), 3000);
+      const errorMessage =
+        err.response?.data?.error || "An error occurred during booking.";
+      setBookingStatus({ state: "error", message: errorMessage });
+      // Also refresh the schedule in case the slot was booked by someone else while this user was on the page
+      fetchSchedule();
     }
   };
 
   if (loading)
-    return <div className="text-center py-20">Loading Doctor's Profile...</div>;
-  if (!doctor)
+    return <div className="text-center py-20">Loading doctor's profile...</div>;
+
+  if (bookingStatus.state === "success") {
     return (
-      <div className="text-center py-20 text-red-500">
-        {error || "Doctor not found."}
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <CheckCircle className="w-24 h-24 text-green-500 mb-4" />
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Appointment Confirmed!
+        </h2>
+        <p className="text-lg text-gray-600 max-w-md">
+          {bookingStatus.message}
+        </p>
       </div>
     );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      {/* Doctor Profile Section */}
-      <div className="bg-white p-8 rounded-lg shadow-xl mb-12 flex flex-col md:flex-row items-center gap-8">
-        <img
-          src={`https://placehold.co/200x200/E2E8F0/4A5568?text=${
-            doctor?.first_name?.charAt(0) || "D"
-          }${doctor?.last_name?.charAt(0) || "R"}`}
-          alt={`Dr. ${doctor.first_name} ${doctor.last_name}`}
-          className="w-48 h-48 rounded-full object-cover border-8 border-gray-100"
-        />
-        <div>
-          <h1 className="text-4xl font-extrabold text-gray-900">
-            Dr. {doctor.first_name || ""} {doctor.last_name || ""}
-          </h1>
-          <p className="text-2xl text-indigo-600 font-semibold mt-1">
-            {doctor.specialization || "Specialist"}
-          </p>
-          <p className="text-lg text-gray-700 mt-2">
-            {doctor.department_name || "General"} Department
-          </p>
-        </div>
-      </div>
-
-      {/* Booking Section */}
-      <div className="bg-white p-8 rounded-lg shadow-xl">
-        <h2 className="text-3xl font-bold text-gray-800 border-b pb-4 mb-6">
-          Book an Appointment
-        </h2>
-
-        {bookingStatus === "success" && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded">
-            <p className="font-bold">Appointment Booked Successfully!</p>
-            <p>The schedule has been updated.</p>
+    <div className="bg-gray-100 min-h-screen">
+      <div className="container mx-auto px-4 py-12">
+        {doctor && (
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 flex items-center space-x-6">
+            <Stethoscope className="w-16 h-16 text-indigo-500" />
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">
+                Dr. {doctor.first_name} {doctor.last_name}
+              </h1>
+              <p className="text-xl text-indigo-600 font-semibold">
+                {doctor.specialization}
+              </p>
+              <p className="text-gray-600">
+                {doctor.department_name} Department
+              </p>
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleBooking}>
-          {/* **IMPROVEMENT: Loop through grouped days** */}
-          <div className="space-y-6 mb-8">
-            {Object.keys(groupedSchedule).map((date) => (
-              <div key={date}>
-                <h3 className="text-lg font-bold text-gray-700 mb-3 border-b pb-2">
-                  {date}
+        <form
+          onSubmit={handleBooking}
+          className="bg-white rounded-2xl shadow-xl p-8"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">
+            Book an Appointment
+          </h2>
+
+          {bookingStatus.state === "error" && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md flex items-center">
+              <AlertCircle className="mr-3" />
+              <span>{bookingStatus.message}</span>
+            </div>
+          )}
+
+          <div className="mb-6">
+            <label className="block text-lg font-semibold text-gray-700 mb-2">
+              <Calendar className="inline-block mr-2" /> Select a Time Slot
+            </label>
+            {Object.keys(groupedSchedule).length === 0 && !loading && (
+              <div className="text-center py-10 px-6 bg-gray-50 rounded-lg">
+                <XCircle className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No available slots
                 </h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                  {groupedSchedule[date].map((slot) => (
-                    <button
-                      type="button"
-                      key={slot.time}
-                      onClick={() =>
-                        !slot.isBooked && setSelectedSlot(slot.time)
+                <p className="mt-1 text-sm text-gray-500">
+                  This doctor has no upcoming availability. Please check back
+                  later.
+                </p>
+              </div>
+            )}
+            {Object.keys(groupedSchedule).map((date) => (
+              <div key={date} className="mb-4">
+                <h3 className="font-semibold text-gray-600 mb-2">{date}</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {/* ✅ FIX: Updated button logic to handle different slot statuses */}
+                  {groupedSchedule[date].map((slot) => {
+                    const isAvailable = slot.status === "available";
+                    let buttonClass = "";
+
+                    if (isAvailable) {
+                      if (selectedSlot === slot.time) {
+                        // Style for selected available slot
+                        buttonClass =
+                          "bg-indigo-600 text-white border-transparent ring-2 ring-offset-2 ring-indigo-500 transform scale-105";
+                      } else {
+                        // Style for a normal, unselected, available slot
+                        buttonClass =
+                          "bg-white text-indigo-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-400";
                       }
-                      disabled={slot.isBooked}
-                      // **IMPROVEMENT: New, more visible styles**
-                      className={`py-3 px-2 rounded-lg text-md font-semibold border-2 transition text-center shadow-sm ${
-                        slot.isBooked
-                          ? "bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed line-through"
-                          : selectedSlot === slot.time
-                          ? "bg-indigo-600 text-white border-transparent ring-2 ring-offset-2 ring-indigo-500 transform scale-105"
-                          : "bg-white text-indigo-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-400"
-                      }`}
-                    >
-                      {new Date(slot.time).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </button>
-                  ))}
+                    } else {
+                      // Style for disabled (unavailable/appointment) slots
+                      buttonClass =
+                        "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed line-through";
+                    }
+
+                    return (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        onClick={() => {
+                          if (isAvailable) {
+                            setSelectedSlot(slot.time);
+                          }
+                        }}
+                        disabled={!isAvailable}
+                        className={`p-3 border rounded-lg text-sm font-semibold transition duration-200 ${buttonClass}`}
+                      >
+                        {new Date(slot.time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -183,12 +242,24 @@ const DoctorDetailPage = () => {
             required
           ></textarea>
 
+          {doctor?.consultation_fee && (
+            <div className="flex justify-end items-center mb-4 text-xl font-bold text-gray-800">
+              <DollarSign size={20} className="mr-2 text-gray-500" />
+              <span>
+                Consultation Fee: ৳
+                {parseFloat(doctor.consultation_fee).toFixed(2)}
+              </span>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={bookingStatus === "booking" || !selectedSlot}
+            disabled={bookingStatus.state === "booking" || !selectedSlot}
             className="w-full bg-indigo-600 text-white font-bold py-4 px-8 rounded-lg hover:bg-indigo-700 transition duration-300 disabled:bg-gray-400 text-lg"
           >
-            {bookingStatus === "booking" ? "Booking..." : "Confirm Appointment"}
+            {bookingStatus.state === "booking"
+              ? "Booking..."
+              : "Confirm Appointment"}
           </button>
           {error && <p className="text-red-500 text-center mt-4">{error}</p>}
         </form>
