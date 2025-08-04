@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 
 // --- ROOM MANAGEMENT ---
-
+//test
 // GET all room booking requests
 router.get("/rooms/bookings", async (req, res) => {
   try {
