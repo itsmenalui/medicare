@@ -39,7 +39,7 @@ const DoctorsPage = () => {
       setError("");
       try {
         // ✨ FIX: Use 'api' instead of 'axios' for the request
-        const response = await api.get("/doctors", {
+        const response = await api.get("/api/doctors", {
           params: { search: searchTerm },
         });
         setDoctors(response.data);
