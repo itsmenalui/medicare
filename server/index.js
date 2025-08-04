@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://medicaree.onrender.com",
+    origin: "https://medicare4bd.netlify.app",
     methods: ["GET", "POST"],
   },
 });
