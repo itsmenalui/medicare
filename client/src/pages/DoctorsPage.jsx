@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link } from "react-router-dom";
 import { Search, Stethoscope, User } from "lucide-react";
 
@@ -38,7 +38,7 @@ const DoctorsPage = () => {
       setLoading(true);
       setError("");
       try {
-        const response = await axios.get("/api/doctors", {
+        const response = await axios.get("/doctors", {
           params: { search: searchTerm },
         });
         setDoctors(response.data);
@@ -97,7 +97,9 @@ const DoctorsPage = () => {
         {!loading && doctors.length === 0 && !error && (
           <div className="text-center py-16 border-2 border-dashed rounded-xl">
             <User size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-2xl font-bold text-gray-700">No Doctors Found</h3>
+            <h3 className="text-2xl font-bold text-gray-700">
+              No Doctors Found
+            </h3>
             <p className="text-gray-500 mt-2">
               Your search for "{searchTerm}" did not match any of our doctors.
             </p>
