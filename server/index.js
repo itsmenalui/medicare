@@ -20,6 +20,13 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to the LearnIT API!",
+    status: "OK",
+  });
+});
+
 app.use((req, res, next) => {
   console.log(
     `[${new Date().toLocaleTimeString()}] Request: ${req.method} ${
