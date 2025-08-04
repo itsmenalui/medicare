@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import axios from "../api/axios";
 import { ArrowLeft, PlusCircle, Shield, AlertTriangle } from "lucide-react";
 
 // A reusable component for displaying lists of details

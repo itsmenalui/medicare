@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import axios from "../api/axios";
 import { usePatientAuth as useAuth } from "../context/PatientAuthContext";
 import {
   Stethoscope,

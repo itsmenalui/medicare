@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePatientAuth as useAuth } from "../context/PatientAuthContext";
-import axios from "axios";
+import axios from "../api/axios";
 import {
   Calendar,
   Clock,

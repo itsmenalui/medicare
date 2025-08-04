@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { usePatientAuth } from "../context/PatientAuthContext";
 import { useCart } from "../context/CartContext"; // Using your existing CartContext
-import axios from "axios";
+import axios from "../api/axios";
 import { Eye, FileText, ArrowLeft, Loader } from "lucide-react";
 import PrescriptionModal from "/src/components/PrescriptionModal.jsx";
 

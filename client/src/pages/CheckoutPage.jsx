@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../api/axios";
 import {
   Trash2,
   User,

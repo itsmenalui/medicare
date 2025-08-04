@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useCart } from "../context/CartContext";
 import { usePatientAuth } from "../context/PatientAuthContext";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";

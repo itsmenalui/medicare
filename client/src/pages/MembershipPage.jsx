@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axios';
 import { usePatientAuth } from '../context/PatientAuthContext';
 import { useCart } from '../context/CartContext';
 import { Crown, Shield, Star } from 'lucide-react';

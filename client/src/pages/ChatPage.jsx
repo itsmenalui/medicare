@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom"; // 1. Import useLocation
 import { usePatientAuth } from "../context/PatientAuthContext";
 import { useEmployeeAuth } from "../context/EmployeeAuthContext";
-import axios from "axios";
+import axios from "../api/axios";
 import io from "socket.io-client";
 import { Send, User } from "lucide-react";
 
