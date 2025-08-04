@@ -8,7 +8,7 @@ import axios from "../api/axios";
 import io from "socket.io-client";
 import { Send, User } from "lucide-react";
 
-const socket = io("https://medicare4bd.netlify.app");
+const socket = io("https://medicaree.onrender.com");
 
 const ChatPage = () => {
   const location = useLocation(); // 2. Get the current URL location
